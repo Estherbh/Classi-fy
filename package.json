@@ -1,5 +1,5 @@
 {
-  "name": "crop-classification-app",
+  "name": "Classi-fy",
   "version": "1.0.0",
   "description": "Application web moderne pour la classification des cultures agricoles par imagerie satellite et intelligence artificielle",
   "private": true,
@@ -41,6 +41,7 @@
     "analyze": "ANALYZE=true vite build",
     "clean": "rm -rf dist node_modules/.vite",
     "typecheck": "echo \"TypeScript not configured\" && exit 0",
+    "install": "npm install --legacy-peer-deps",
     "postinstall": "echo \"Installation terminée avec succès!\""
   },
   "dependencies": {
@@ -91,7 +92,7 @@
     "next-connect": "^1.0.0",
     "next-themes": "^0.4.6",
     "react": "^19.1.0",
-    "react-day-picker": "8.10.1",
+    "react-day-picker": "^9.0.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.56.3",
     "react-resizable-panels": "^3.0.2",
@@ -117,8 +118,4 @@
   },
   "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af"
 }
-{
-  "scripts": {
-    "install": "npm install --legacy-peer-deps"
-  }
-}
+
