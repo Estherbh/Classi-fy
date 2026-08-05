@@ -1,0 +1,29 @@
+# Données personnelles — ne JAMAIS commiter
+# Ce dossier contient les noms et codes des fermiers.
+data/
+
+# Environnement
+.env
+.env.local
+.env.*.local
+
+# Dépendances et build
+node_modules/
+dist/
+.vite/
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+venv/
+.venv/
+
+# Sorties générées
+*.xlsx
+*.csv
+
+# Système
+.DS_Store
+Thumbs.db
+*.log
