@@ -175,6 +175,86 @@ L'effondrement de l'optimisme, de 0,225 à 0,018, est aussi important que la hau
 
 ---
 
+## Zone de validité
+
+Les 34 blocs d'entraînement couvrent **12,1° à 30,1° est et -4,9° à 4,0° nord**, c'est-à-dire toute la largeur de la RDC, de la façade atlantique jusqu'aux Grands Lacs. La validation croisée spatiale mesure directement le transfert d'une région à l'autre à l'intérieur de cette emprise, et l'optimisme de +0,018 dit qu'il se fait sans perte notable.
+
+Le modèle est donc utilisable **dans le bassin du Congo, en contexte de forêt tropicale humide**.
+
+En revanche, une caractéristique de l'échantillonnage restreint sa portée et doit être comprise avant tout usage. Les tuiles retenues sont celles où Descals détecte du palmier, et à l'intérieur de chaque tuile l'échantillonnage vise la fenêtre la plus dense. **La classe « pas de palmier » représente donc ce qui entoure les palmeraies**, essentiellement de la forêt et des cultures voisines. Elle ne représente pas l'ensemble du territoire congolais.
+
+Ce que le modèle n'a jamais vu :
+
+- savane sèche du Katanga et du Kasaï méridional
+- zones urbaines et périurbaines
+- reliefs et forêts d'altitude du Kivu
+- grands plans d'eau et zones marécageuses étendues
+- pays voisins, aucun test n'a été fait hors RDC
+
+Sur ces milieux, son comportement est inconnu, non pas mauvais mais non mesuré. C'est le mécanisme qui explique la première limite ci-dessous.
+
+---
+
+## Usages possibles
+
+### Ce que le modèle sait faire aujourd'hui
+
+**Vérifier un site précis.** Sur une parcelle ou des coordonnées données, il répond si du palmier est présent, avec une précision de 0,86. Sur 100 alertes, 86 sont justes.
+
+**Prioriser des missions de terrain.** Le modèle produit une probabilité, pas seulement une réponse. Classer les sites suspects par probabilité décroissante et vérifier les premiers permet de concentrer un budget de patrouille limité là où le rendement est le meilleur.
+
+**Contrôler une déclaration.** Une concession ou un exploitant affirme qu'aucune plantation n'occupe une parcelle : le modèle fournit un avis indépendant, appuyé sur de l'imagerie publique et daté.
+
+**Pré-filtrer avant photo-interprétation.** Sur un lot de sites à examiner à l'œil, écarter d'abord ceux que le modèle juge sans palmier avec une forte confiance réduit la charge humaine, à condition d'accepter les 13 % de palmeraies manquées.
+
+**Documenter un rapport.** Les chiffres sont mesurés en validation spatiale et la méthode est reproductible, donc défendables devant un bailleur ou un partenaire scientifique.
+
+### Applications concrètes pour la conservation
+
+- surveillance des limites de parcs et de leurs zones tampons
+- détection d'expansion de plantations dans des concessions suivies
+- appui chiffré aux rapports de déforestation liés au palmier
+- ciblage des patrouilles et des missions de vérification
+
+### Ce que le modèle ne sait pas faire
+
+**Produire une carte nationale.** Voir la limite 1 ci-dessous, c'est le point le plus important de ce document.
+
+**Distinguer industriel et villageois.** Voir la limite 2.
+
+**Dater une plantation ou détecter un changement.** Le modèle est entraîné sur une seule année. Comparer deux années demanderait de le réentraîner et de valider cette comparaison, ce qui n'a pas été fait.
+
+**Estimer une surface.** Il classe des points, pas des polygones. Convertir en hectares exigerait une segmentation et une validation de surface distinctes.
+
+---
+
+## Pistes d'amélioration
+
+Classées par gain attendu, du plus rentable au plus coûteux.
+
+**1. Élargir et rééquilibrer la classe négative.**
+C'est le chantier prioritaire, celui qui débloquerait la cartographie. Il faut échantillonner des tuiles sans aucun palmier, savane, ville, montagne, marécage, et respecter la rareté réelle du palmier plutôt que 60,7 %. Effet attendu : effondrement du taux de fausse alerte sur les milieux que le modèle n'a jamais vus.
+
+**2. Ajuster le seuil de décision.**
+Le modèle sort une probabilité, actuellement tranchée à 0,5. Remonter ce seuil échange du rappel contre de la précision. Pour une carte nationale, un seuil à 0,8 ou 0,9 réduirait fortement les faux positifs au prix de quelques palmeraies manquées. Le bon réglage dépend du coût relatif des deux erreurs dans ton usage, il se choisit et ne se devine pas.
+
+**3. Ajouter le relief.**
+Le modèle numérique de terrain Copernicus ou SRTM fournit altitude et pente. Le palmier à huile ne pousse ni en altitude ni sur forte pente. Deux variables gratuites, immédiates à extraire dans Earth Engine, qui élimineraient mécaniquement une partie des faux positifs en zone de relief.
+
+**4. Introduire des variables de texture.**
+Écart type local, matrices de cooccurrence sur le radar, statistiques de voisinage. C'est la seule voie pour séparer palmier industriel et palmier villageois, puisque leur différence est géométrique. Bénéfice attendu aussi sur la distinction palmeraie contre forêt.
+
+**5. Étendre à plusieurs années.**
+Rejouer l'extraction sur 2019 à 2023 multiplierait le volume d'apprentissage, mesurerait la stabilité du modèle dans le temps et ouvrirait la détection de changement, donc le suivi d'expansion.
+
+**6. Collecter des étiquettes de terrain.**
+Les étiquettes actuelles proviennent d'un modèle, celui de Descals, dont les erreurs sont héritées sans contrôle. Des relevés faits avec les fermiers et les équipes de terrain fourniraient une vérité indépendante, et permettraient enfin de mesurer la performance réelle plutôt que la concordance avec un autre modèle.
+
+**7. Densifier la série radar.**
+Le modèle utilise des médianes mensuelles. Sentinel-1 repasse tous les six à douze jours : une résolution temporelle plus fine, ou des statistiques de variabilité entre passages, pourrait porter davantage d'information de structure.
+
+---
+
 ## Limites connues
 
 Elles sont énoncées ici parce qu'elles conditionnent l'usage du modèle.

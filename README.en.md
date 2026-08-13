@@ -175,6 +175,86 @@ The collapse of optimism, from 0.225 to 0.018, matters as much as the score incr
 
 ---
 
+## Area of validity
+
+The 34 training blocks span **12.1° to 30.1° east and -4.9° to 4.0° north**, that is the full width of the DRC, from the Atlantic side to the Great Lakes. Spatial cross-validation measures transfer between regions inside that extent directly, and an optimism of +0.018 says it happens without meaningful loss.
+
+The model is therefore usable **within the Congo Basin, in a humid tropical forest setting**.
+
+One feature of the sampling does restrict its reach, however, and must be understood before any use. The selected tiles are those where Descals detects palm, and within each tile the sampling targets the densest window. **The "no palm" class therefore represents what surrounds palm plantations**, mostly forest and neighbouring crops. It does not represent the Congolese territory as a whole.
+
+What the model has never seen:
+
+- dry savanna of Katanga and southern Kasaï
+- urban and peri-urban areas
+- highlands and montane forests of the Kivu
+- large water bodies and extensive wetlands
+- neighbouring countries, no test was run outside the DRC
+
+On those environments its behaviour is unknown, not poor but unmeasured. This is the mechanism behind the first limitation below.
+
+---
+
+## Possible uses
+
+### What the model can do today
+
+**Check a specific site.** Given a plot or a set of coordinates, it reports whether palm is present, with a precision of 0.86. Out of 100 alerts, 86 are correct.
+
+**Prioritise field missions.** The model outputs a probability, not just an answer. Ranking suspect sites by decreasing probability and checking the top ones concentrates a limited patrol budget where the return is highest.
+
+**Audit a declaration.** A concession or an operator claims no plantation occupies a plot: the model provides an independent, dated opinion grounded in public imagery.
+
+**Pre-filter before photo-interpretation.** On a batch of sites to review by eye, first discarding those the model confidently judges palm-free reduces the human workload, provided the 13 % of missed plantations are acceptable.
+
+**Support a report.** The figures are measured under spatial validation and the method is reproducible, hence defensible before a funder or a scientific partner.
+
+### Concrete conservation applications
+
+- monitoring park boundaries and their buffer zones
+- detecting plantation expansion inside tracked concessions
+- quantified support for palm-driven deforestation reporting
+- targeting patrols and verification missions
+
+### What the model cannot do
+
+**Produce a national map.** See limitation 1 below, the most important point in this document.
+
+**Tell industrial from smallholder palm.** See limitation 2.
+
+**Date a plantation or detect change.** The model is trained on a single year. Comparing two years would require retraining and validating that comparison, which has not been done.
+
+**Estimate an area.** It classifies points, not polygons. Converting to hectares would require separate segmentation and area validation.
+
+---
+
+## Improvement paths
+
+Ordered by expected payoff, from most to least cost-effective.
+
+**1. Broaden and rebalance the negative class.**
+This is the priority, the one that would unlock mapping. It means sampling tiles with no palm at all, savanna, cities, mountains, wetlands, and honouring the real scarcity of palm instead of 60.7 %. Expected effect: collapse of the false alarm rate on environments the model has never seen.
+
+**2. Tune the decision threshold.**
+The model outputs a probability, currently cut at 0.5. Raising that threshold trades recall for precision. For a national map, a threshold of 0.8 or 0.9 would sharply cut false positives at the cost of a few missed plantations. The right setting depends on the relative cost of the two errors in your use case, it is chosen rather than guessed.
+
+**3. Add terrain.**
+The Copernicus or SRTM digital elevation model provides altitude and slope. Oil palm grows neither at altitude nor on steep slopes. Two free features, immediate to extract in Earth Engine, that would mechanically remove part of the false positives in hilly terrain.
+
+**4. Introduce texture features.**
+Local standard deviation, grey-level co-occurrence matrices on radar, neighbourhood statistics. This is the only route to separating industrial from smallholder palm, since their difference is geometric. Expected benefit on the palm against forest distinction as well.
+
+**5. Extend to several years.**
+Replaying the extraction over 2019 to 2023 would multiply the training volume, measure the model's stability over time and open up change detection, hence expansion monitoring.
+
+**6. Collect field labels.**
+The current labels come from a model, that of Descals, whose errors are inherited unchecked. Surveys carried out with farmers and field teams would provide independent ground truth, and would finally allow measuring real performance rather than agreement with another model.
+
+**7. Densify the radar series.**
+The model uses monthly medians. Sentinel-1 revisits every six to twelve days: a finer temporal resolution, or variability statistics between passes, could carry more structural information.
+
+---
+
 ## Known limitations
 
 They are stated here because they govern how the model may be used.
