@@ -1,4 +1,4 @@
-"""Étape 3/3 — Convertit le CSV exporté par Earth Engine au format du notebook.
+"""Étape 3/3 : convertit le CSV exporté par Earth Engine au format du notebook.
 
     python preparer_parcelles.py data/series_sentinel_rdc.csv
 

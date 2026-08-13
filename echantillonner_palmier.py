@@ -1,4 +1,4 @@
-"""Étape 1/3 — Échantillonne des points étiquetés dans les rasters palmier de la RDC.
+"""Étape 1/3 : échantillonne des points étiquetés dans les rasters palmier de la RDC.
 
 Produit `data/echantillons_rdc.geojson`, à téléverser dans Google Earth Engine
 pour l'étape 2 (extraction des séries Sentinel-1 / Sentinel-2).
@@ -74,7 +74,7 @@ def echantillonner_tuile(chemin, identifiant):
 def main():
     if not GRILLE.exists():
         raise FileNotFoundError(
-            f"{GRILLE} introuvable — télécharge Grid_OilPalm2016-2021.zip "
+            f"{GRILLE} introuvable, télécharge Grid_OilPalm2016-2021.zip "
             "depuis https://zenodo.org/records/13379129 et décompresse-le dans data/."
         )
 

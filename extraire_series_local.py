@@ -1,4 +1,4 @@
-"""Étape 2 (variante sans compte) — Extrait les séries Sentinel-2 depuis AWS Open Data.
+"""Étape 2 (variante sans compte) : extrait les séries Sentinel-2 depuis AWS Open Data.
 
 Alternative à extraire_series_gee.py : ne demande **aucun compte**, ni Google Earth
 Engine, ni Copernicus. Les images Sentinel-2 L2A sont publiées en accès anonyme sur
@@ -269,7 +269,7 @@ def main():
 
     if not GRILLE.exists():
         raise SystemExit(
-            f"{GRILLE} introuvable — télécharge et décompresse les fichiers Zenodo "
+            f"{GRILLE} introuvable, télécharge et décompresse les fichiers Zenodo "
             "dans data/ (voir echantillonner_palmier.py)."
         )
 
@@ -318,7 +318,7 @@ def main():
             )
 
     if not JOURNAL.exists():
-        raise SystemExit("Aucun point exploitable — vérifie la connexion réseau.")
+        raise SystemExit("Aucun point exploitable, vérifie la connexion réseau.")
 
     donnees = pd.read_csv(JOURNAL)
     donnees.to_parquet(SORTIE, index=False)

@@ -1,4 +1,4 @@
-"""Étape 2/3 — Extrait les séries Sentinel-2 et Sentinel-1 sur les points échantillonnés.
+"""Étape 2/3 : extrait les séries Sentinel-2 et Sentinel-1 sur les points échantillonnés.
 
 Tourne sur Google Earth Engine et exporte un CSV dans ton Google Drive.
 
@@ -21,7 +21,7 @@ from pathlib import Path
 
 import ee
 
-PROJET = "à-remplir"  # ex. "ee-estherbahati"
+PROJET = "citric-gradient-479805-a5"
 
 ENTREE = Path("data") / "echantillons_rdc.geojson"
 DOSSIER_DRIVE = "Classify"
@@ -33,7 +33,7 @@ ANNEE = 2021
 # Bandes Sentinel-2 attendues par le notebook (visible, proche et moyen infrarouge).
 BANDES_S2 = ["B2", "B3", "B4", "B8", "B11", "B12"]
 # Sentinel-1 : rétrodiffusion radar. C'est elle qui porte la structure verticale de la
-# canopée — le seul signal qui sépare vraiment palmier, cacao et forêt, toutes trois
+# canopée, le seul signal qui sépare vraiment palmier, cacao et forêt, toutes trois
 # saturées en NDVI toute l'année.
 BANDES_S1 = ["VV", "VH"]
 
@@ -51,14 +51,25 @@ def masquer_nuages(image):
     return image.updateMask(mauvais.Not())
 
 
-def composite_mensuel(collection, debut, fin, secours):
+def composite_mensuel(collection, debut, fin, secours, bandes):
     """Médiane du mois ; là où tout est masqué, on retombe sur la médiane annuelle.
 
     Sans ce filet, une saison des pluies couverte suffit à vider un mois entier, et
     `sampleRegions` supprime alors purement et simplement le point concerné.
+
+    Le repli se fait bande par bande : `unmask` refuse une image de remplacement à
+    plusieurs bandes, elle n'en accepte qu'une seule.
     """
-    mois = collection.filterDate(debut, fin).median()
-    return mois.unmask(secours)
+    mensuelle = collection.filterDate(debut, fin)
+    # Un mois sans aucune acquisition donne une médiane sans aucune bande, sur laquelle
+    # `select` échoue. Le cas se produit vraiment : Sentinel-1 ne survole pas toute la
+    # RDC tous les mois. On bascule alors entièrement sur la médiane annuelle.
+    mois = ee.Image(
+        ee.Algorithms.If(mensuelle.size().gt(0), mensuelle.median(), secours)
+    )
+    return ee.Image.cat(
+        [mois.select([bande]).unmask(secours.select([bande])) for bande in bandes]
+    )
 
 
 def construire_image(zone):
@@ -92,12 +103,12 @@ def construire_image(zone):
         fin = debut.advance(1, "month")
         suffixe = f"_{mois:02d}"
         couches.append(
-            composite_mensuel(s2, debut, fin, secours_s2).rename(
+            composite_mensuel(s2, debut, fin, secours_s2, BANDES_S2).rename(
                 [f"{bande}{suffixe}" for bande in BANDES_S2]
             )
         )
         couches.append(
-            composite_mensuel(s1, debut, fin, secours_s1).rename(
+            composite_mensuel(s1, debut, fin, secours_s1, BANDES_S1).rename(
                 [f"{bande}{suffixe}" for bande in BANDES_S1]
             )
         )
@@ -111,7 +122,7 @@ def main():
             "Tu le trouves sur https://console.cloud.google.com/earth-engine"
         )
     if not ENTREE.exists():
-        raise SystemExit(f"{ENTREE} introuvable — lance d'abord echantillonner_palmier.py")
+        raise SystemExit(f"{ENTREE} introuvable, lance d'abord echantillonner_palmier.py")
 
     ee.Initialize(project=PROJET)
 
