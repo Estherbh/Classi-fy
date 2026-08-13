@@ -1,6 +1,6 @@
 # Classi-fy
 
-Détection du palmier à huile en République démocratique du Congo à partir de séries temporelles Sentinel-1 et Sentinel-2.
+Détection du palmier à huile dans le bassin du Congo à partir de séries temporelles Sentinel-1 et Sentinel-2. Entraîné sur 34 blocs, dont 24 en République démocratique du Congo.
 
 [English version](README.en.md)
 
@@ -66,8 +66,8 @@ Pourquoi cette source. C'est la seule couche ouverte, étiquetée, à 10 m et va
 
 ### Échantillonnage
 
-- Emprise : RDC, boîte englobante 12,2° à 31,3° est, -13,5° à 5,4° nord
-- 34 tuiles de 100 km contiennent du palmier
+- Sélection : boîte englobante 12,2° à 31,3° est, -13,5° à 5,4° nord, croisée avec la grille de tuiles
+- 34 tuiles de 100 km contiennent du palmier, couvrant 12,1° à 30,1° est et -4,9° à 4,0° nord
 - Un point tous les 200 m au maximum, soit un pixel sur 20 dans chaque direction : deux pixels voisins d'une même plantation sont quasi identiques et gonfleraient le jeu sans ajouter d'information
 - Tirage équilibré entre les trois classes, dans la fenêtre la plus dense en palmier de chaque tuile
 - Graine aléatoire fixée à 42
@@ -79,6 +79,24 @@ Résultat : **8 658 points répartis sur 34 blocs**.
 | pas_de_palmier | 3 400 |
 | palmier_industriel | 2 728 |
 | palmier_villageois | 2 530 |
+
+### Répartition géographique réelle
+
+La sélection se fait par **boîte rectangulaire, pas par frontière nationale**. L'emprise choisie déborde donc sur les pays voisins, et le jeu d'entraînement n'est pas exclusivement congolais. Vérification faite tuile par tuile contre les frontières `USDOS/LSIB_SIMPLE/2017` :
+
+| Pays | Blocs | Points | Part |
+|---|---|---|---|
+| **République démocratique du Congo** | 24 | 6 214 | **71,8 %** |
+| République du Congo | 4 | 936 | 10,8 % |
+| République centrafricaine | 2 | 508 | 5,9 % |
+| Cameroun | 1 | 300 | 3,5 % |
+| Tanzanie | 1 | 300 | 3,5 % |
+| Burundi | 1 | 200 | 2,3 % |
+| Angola | 1 | 200 | 2,3 % |
+
+En RDC, les blocs se répartissent d'ouest en est : la façade atlantique du Kongo Central, la cuvette centrale entre 18° et 22° est, le nord de la Tshopo et du Bas-Uélé, puis les blocs orientaux entre 28° et 29° est, du côté du Sud-Kivu et du Tanganyika.
+
+Ce débordement n'affaiblit pas le modèle, il élargit son domaine : la validation croisée spatiale porte sur l'ensemble du bassin du Congo et non sur un seul pays. Mais il interdit de présenter le résultat comme un modèle strictement congolais, et il est énoncé ici pour cette raison.
 
 ### Imagerie
 
@@ -177,11 +195,11 @@ L'effondrement de l'optimisme, de 0,225 à 0,018, est aussi important que la hau
 
 ## Zone de validité
 
-Les 34 blocs d'entraînement couvrent **12,1° à 30,1° est et -4,9° à 4,0° nord**, c'est-à-dire toute la largeur de la RDC, de la façade atlantique jusqu'aux Grands Lacs. La validation croisée spatiale mesure directement le transfert d'une région à l'autre à l'intérieur de cette emprise, et l'optimisme de +0,018 dit qu'il se fait sans perte notable.
+Les 34 blocs d'entraînement couvrent **12,1° à 30,1° est et -4,9° à 4,0° nord**, soit toute la largeur du bassin du Congo, de la façade atlantique jusqu'aux Grands Lacs. La validation croisée spatiale mesure directement le transfert d'une région à l'autre à l'intérieur de cette emprise, et l'optimisme de +0,018 dit qu'il se fait sans perte notable.
 
-Le modèle est donc utilisable **dans le bassin du Congo, en contexte de forêt tropicale humide**.
+Le domaine de validité est donc le **bassin du Congo en forêt tropicale humide**, et non un pays. Il couvre 24 blocs en RDC et 10 chez six voisins, ce qui est une force pour la généralisation : le modèle a été testé sur des contextes nationaux différents et n'a pas décroché.
 
-En revanche, une caractéristique de l'échantillonnage restreint sa portée et doit être comprise avant tout usage. Les tuiles retenues sont celles où Descals détecte du palmier, et à l'intérieur de chaque tuile l'échantillonnage vise la fenêtre la plus dense. **La classe « pas de palmier » représente donc ce qui entoure les palmeraies**, essentiellement de la forêt et des cultures voisines. Elle ne représente pas l'ensemble du territoire congolais.
+En revanche, une caractéristique de l'échantillonnage restreint sa portée et doit être comprise avant tout usage. Les tuiles retenues sont celles où Descals détecte du palmier, et à l'intérieur de chaque tuile l'échantillonnage vise la fenêtre la plus dense. **La classe « pas de palmier » représente donc ce qui entoure les palmeraies**, essentiellement de la forêt et des cultures voisines. Elle ne représente pas l'ensemble d'un territoire national.
 
 Ce que le modèle n'a jamais vu :
 
@@ -189,7 +207,7 @@ Ce que le modèle n'a jamais vu :
 - zones urbaines et périurbaines
 - reliefs et forêts d'altitude du Kivu
 - grands plans d'eau et zones marécageuses étendues
-- pays voisins, aucun test n'a été fait hors RDC
+- toute la moitié sud de la RDC, aucun bloc ne descend sous -4,9° de latitude
 
 Sur ces milieux, son comportement est inconnu, non pas mauvais mais non mesuré. C'est le mécanisme qui explique la première limite ci-dessous.
 

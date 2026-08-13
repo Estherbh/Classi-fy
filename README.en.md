@@ -1,6 +1,6 @@
 # Classi-fy
 
-Oil palm detection in the Democratic Republic of the Congo from Sentinel-1 and Sentinel-2 time series.
+Oil palm detection across the Congo Basin from Sentinel-1 and Sentinel-2 time series. Trained on 34 blocks, 24 of them in the Democratic Republic of the Congo.
 
 [Version française](README.md)
 
@@ -66,8 +66,8 @@ Why this source. It is the only open, labelled, 10 m, field-validated layer cove
 
 ### Sampling
 
-- Extent: DRC, bounding box 12.2° to 31.3° east, -13.5° to 5.4° north
-- 34 tiles of 100 km contain palm
+- Selection: bounding box 12.2° to 31.3° east, -13.5° to 5.4° north, intersected with the tile grid
+- 34 tiles of 100 km contain palm, spanning 12.1° to 30.1° east and -4.9° to 4.0° north
 - One point every 200 m at most, that is one pixel in 20 along each axis: two neighbouring pixels of the same plantation are nearly identical and would inflate the dataset without adding information
 - Balanced draw across the three classes, within the palm-densest window of each tile
 - Random seed fixed at 42
@@ -79,6 +79,24 @@ Result: **8,658 points across 34 blocks**.
 | no palm | 3,400 |
 | industrial palm | 2,728 |
 | smallholder palm | 2,530 |
+
+### Actual geographic spread
+
+Selection is done by **bounding box, not by national border**. The chosen extent therefore spills into neighbouring countries, and the training set is not exclusively Congolese. Checked tile by tile against the `USDOS/LSIB_SIMPLE/2017` boundaries:
+
+| Country | Blocks | Points | Share |
+|---|---|---|---|
+| **Democratic Republic of the Congo** | 24 | 6,214 | **71.8 %** |
+| Republic of the Congo | 4 | 936 | 10.8 % |
+| Central African Republic | 2 | 508 | 5.9 % |
+| Cameroon | 1 | 300 | 3.5 % |
+| Tanzania | 1 | 300 | 3.5 % |
+| Burundi | 1 | 200 | 2.3 % |
+| Angola | 1 | 200 | 2.3 % |
+
+Within the DRC the blocks run west to east: the Atlantic side of Kongo Central, the central basin between 18° and 22° east, northern Tshopo and Bas-Uélé, then the eastern blocks between 28° and 29° east, towards South Kivu and Tanganyika.
+
+This spill does not weaken the model, it widens its domain: spatial cross-validation covers the Congo Basin rather than a single country. But it forbids presenting the result as a strictly Congolese model, and it is stated here for that reason.
 
 ### Imagery
 
@@ -177,11 +195,11 @@ The collapse of optimism, from 0.225 to 0.018, matters as much as the score incr
 
 ## Area of validity
 
-The 34 training blocks span **12.1° to 30.1° east and -4.9° to 4.0° north**, that is the full width of the DRC, from the Atlantic side to the Great Lakes. Spatial cross-validation measures transfer between regions inside that extent directly, and an optimism of +0.018 says it happens without meaningful loss.
+The 34 training blocks span **12.1° to 30.1° east and -4.9° to 4.0° north**, the full width of the Congo Basin, from the Atlantic side to the Great Lakes. Spatial cross-validation measures transfer between regions inside that extent directly, and an optimism of +0.018 says it happens without meaningful loss.
 
-The model is therefore usable **within the Congo Basin, in a humid tropical forest setting**.
+The domain of validity is therefore the **Congo Basin in humid tropical forest**, not a country. It spans 24 blocks in the DRC and 10 across six neighbours, which is a strength for generalisation: the model was tested across different national contexts and did not break down.
 
-One feature of the sampling does restrict its reach, however, and must be understood before any use. The selected tiles are those where Descals detects palm, and within each tile the sampling targets the densest window. **The "no palm" class therefore represents what surrounds palm plantations**, mostly forest and neighbouring crops. It does not represent the Congolese territory as a whole.
+One feature of the sampling does restrict its reach, however, and must be understood before any use. The selected tiles are those where Descals detects palm, and within each tile the sampling targets the densest window. **The "no palm" class therefore represents what surrounds palm plantations**, mostly forest and neighbouring crops. It does not represent any national territory as a whole.
 
 What the model has never seen:
 
@@ -189,7 +207,7 @@ What the model has never seen:
 - urban and peri-urban areas
 - highlands and montane forests of the Kivu
 - large water bodies and extensive wetlands
-- neighbouring countries, no test was run outside the DRC
+- the entire southern half of the DRC, no block reaches below -4.9° latitude
 
 On those environments its behaviour is unknown, not poor but unmeasured. This is the mechanism behind the first limitation below.
 
