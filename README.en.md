@@ -382,6 +382,8 @@ Replaces steps 2 and 3 by reading Sentinel-2 from AWS Open Data. Allow one hour.
 | `extraire_series_local.py` | step 2, account-free variant, Sentinel-2 only from AWS |
 | `preparer_parcelles.py` | step 3, converts the Earth Engine CSV to parquet |
 | `modele_binaire.py` | step 4, final palm against no-palm model |
+| `predictions_carte.py` | geolocated predictions for the test fold, feeding the map |
+| `carte_resultats.py` | map of the four confusion-matrix cases, PNG output |
 | `classification_cultures.ipynb` | analysis notebook, split comparison and three-class evaluation |
 | `organiser_fermiers_py.ipynb` | farmer list organisation, outside the classification pipeline |
 

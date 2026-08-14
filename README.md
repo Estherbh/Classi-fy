@@ -382,6 +382,8 @@ Remplace les étapes 2 et 3 en lisant Sentinel-2 sur AWS Open Data. Compter une 
 | `extraire_series_local.py` | étape 2, variante sans compte, Sentinel-2 seul depuis AWS |
 | `preparer_parcelles.py` | étape 3, conversion du CSV Earth Engine au format parquet |
 | `modele_binaire.py` | étape 4, modèle final palmier contre pas de palmier |
+| `predictions_carte.py` | prédictions géolocalisées du pli de test, pour la carte |
+| `carte_resultats.py` | carte des quatre cas de la matrice de confusion, PNG |
 | `classification_cultures.ipynb` | notebook d'analyse, comparaison des découpages et évaluation à 3 classes |
 | `organiser_fermiers_py.ipynb` | organisation des listes de fermiers, hors chaîne de classification |
 
