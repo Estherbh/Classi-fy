@@ -30,13 +30,15 @@ CONTOURS = DOSSIER / "contours_pays.geojson"
 GRILLE = DOSSIER / "palmier_grille" / "Grid_OilPalm2016-2021.shp"
 SORTIE = Path("portfolio") / "carte-blocs-test.png"
 
-# Palette validée sur toutes les paires : écart minimal 13,4 en vision déficiente,
-# 19,1 en vision normale. Froid pour les décisions correctes, chaud pour les erreurs.
+# Palette validée sur toutes les paires : écart minimal 10,4 en vision déficiente,
+# 15,3 en vision normale. Froid pour les décisions correctes, chaud pour les erreurs.
+# La paire critique est ambre contre rouge, les deux types d'erreur : ils n'ont pas le
+# même coût opérationnel, les confondre viderait la carte de son intérêt.
 COULEURS = {
     "Palmier détecté": "#0AA5AE",
     "Correctement écarté": "#2C5FBF",
     "Fausse alerte": "#C9761B",
-    "Palmier manqué": "#C2255C",
+    "Palmier manqué": "#B91C1C",
 }
 ORDRE = ["Palmier détecté", "Correctement écarté", "Fausse alerte", "Palmier manqué"]
 
@@ -168,7 +170,7 @@ def dessiner_reperage(axes, pays, tuiles, blocs_test, mis_en_avant):
     apprentissage = tuiles[~tuiles["ID"].isin(blocs_test)]
     test = tuiles[tuiles["ID"].isin(blocs_test)]
     apprentissage.plot(ax=axes, color=ENCRE_PALE, alpha=0.45, zorder=3)
-    test.plot(ax=axes, color="#C2255C", alpha=0.9, zorder=4)
+    test.plot(ax=axes, color="#B91C1C", alpha=0.9, zorder=4)
 
     for bloc in mis_en_avant:
         forme = tuiles[tuiles["ID"] == bloc]
@@ -190,7 +192,7 @@ def dessiner_reperage(axes, pays, tuiles, blocs_test, mis_en_avant):
     axes.text(0, 1.06, "Les 34 blocs, bassin du Congo", transform=axes.transAxes,
               fontsize=10, fontweight="bold", color=ENCRE, va="bottom", ha="left")
     axes.text(0, -0.14,
-              "gris : apprentissage      cramoisi : test",
+              "gris : apprentissage      rouge : test",
               transform=axes.transAxes, fontsize=8.5, color=ENCRE_PALE,
               va="top", ha="left")
 
@@ -270,7 +272,7 @@ def main():
     figure.text(
         0.42, 0.208,
         "Bleus : décisions correctes.\n"
-        "Ambre et cramoisi : erreurs, ce sont elles\n"
+        "Ambre et rouge : erreurs, ce sont elles\n"
         "qui demanderaient une vérification humaine.",
         fontsize=10.5, color=ENCRE_DOUCE, va="top", linespacing=1.6,
     )
@@ -278,7 +280,7 @@ def main():
         0.42, 0.122,
         "Démonstration sur deux blocs d'évaluation.\n"
         "Ce n'est pas une carte du palmier en RDC.",
-        fontsize=10.5, color="#C2255C", va="top", fontweight="bold", linespacing=1.6,
+        fontsize=10.5, color="#B91C1C", va="top", fontweight="bold", linespacing=1.6,
     )
     figure.text(
         0.05, 0.052,
