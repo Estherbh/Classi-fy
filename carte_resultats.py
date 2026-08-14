@@ -1,8 +1,10 @@
 """Produit la carte des résultats destinée au portfolio et aux réseaux sociaux.
 
-    python carte_resultats.py
+    python carte_resultats.py                 version française
+    python carte_resultats.py --langue en     version anglaise
 
-Lit `data/predictions_test.geojson` et écrit `portfolio/carte-blocs-test.png`.
+Lit `data/predictions_test.geojson` et écrit `portfolio/carte-blocs-test.png`, ou
+`carte-blocs-test-en.png` en anglais.
 
 La carte montre deux blocs de test côte à côte, le meilleur et le pire, pour rendre
 visible ce que l'écart type de 0,022 entre plis signifie sur le terrain. Les quatre
@@ -13,8 +15,8 @@ laissées au texte d'accompagnement : une image partagée sur un réseau social 
 sans sa légende.
 """
 
+import argparse
 import json
-import urllib.request
 from pathlib import Path
 
 import geopandas as gpd
@@ -28,18 +30,19 @@ DOSSIER = Path("data")
 PREDICTIONS = DOSSIER / "predictions_test.geojson"
 CONTOURS = DOSSIER / "contours_pays.geojson"
 GRILLE = DOSSIER / "palmier_grille" / "Grid_OilPalm2016-2021.shp"
-SORTIE = Path("portfolio") / "carte-blocs-test.png"
 
 # Palette validée sur toutes les paires : écart minimal 10,4 en vision déficiente,
 # 15,3 en vision normale. Froid pour les décisions correctes, chaud pour les erreurs.
 # La paire critique est ambre contre rouge, les deux types d'erreur : ils n'ont pas le
-# même coût opérationnel, les confondre viderait la carte de son intérêt.
+# même coût opérationnel, les confondre viderait la carte de son intérêt. Un rouge plus
+# vif tombe sous le plancher, ne pas l'éclaircir.
 COULEURS = {
     "Palmier détecté": "#0AA5AE",
     "Correctement écarté": "#2C5FBF",
     "Fausse alerte": "#C9761B",
     "Palmier manqué": "#B91C1C",
 }
+# Clés de données, toujours en français : elles viennent du fichier de prédictions.
 ORDRE = ["Palmier détecté", "Correctement écarté", "Fausse alerte", "Palmier manqué"]
 
 ENCRE = "#0F1A15"
@@ -48,6 +51,83 @@ ENCRE_PALE = "#74857C"
 FOND = "#FCFCFB"
 TERRE = "#ECF0ED"
 TRAIT = "#C3CDC6"
+
+TEXTES = {
+    "fr": {
+        "sortie": "carte-blocs-test.png",
+        "titre": "Le même modèle, deux régions",
+        "chapeau": (
+            "Prédictions de palmier à huile sur deux blocs de 100 km tenus à l'écart de "
+            "l'apprentissage, le meilleur et le pire\ndes sept blocs d'évaluation. Chaque "
+            "point est une parcelle, sa couleur dit si le modèle a eu raison."
+        ),
+        "meilleur": "LE MEILLEUR CAS",
+        "pire": "LE PIRE CAS",
+        "region_meilleur": "Cuvette centrale",
+        "region_pire": "Sud-Kivu",
+        "manquees": "{n} palmeraies manquées sur {total}",
+        "categories": {
+            "Palmier détecté": "Palmier détecté",
+            "Correctement écarté": "Correctement écarté",
+            "Fausse alerte": "Fausse alerte",
+            "Palmier manqué": "Palmier manqué",
+        },
+        "reperage": "Les 34 blocs, bassin du Congo",
+        "reperage_legende": "gris : apprentissage      rouge : test",
+        "lecture": (
+            "Bleus : décisions correctes.\n"
+            "Ambre et rouge : erreurs, ce sont elles\n"
+            "qui demanderaient une vérification humaine."
+        ),
+        "portee": (
+            "Démonstration sur deux blocs d'évaluation.\n"
+            "Ce n'est pas une carte du palmier en RDC."
+        ),
+        "attributions": (
+            "Étiquettes : Descals et al. 2024, Global Oil Palm extent maps, Zenodo, "
+            "CC BY 4.0.\nImagerie : Copernicus Sentinel-1 et Sentinel-2, ESA.   "
+            "Contours : USDOS LSIB, domaine public."
+        ),
+        "pourcent": "{v:.0f} %",
+    },
+    "en": {
+        "sortie": "carte-blocs-test-en.png",
+        "titre": "One model, two regions",
+        "chapeau": (
+            "Oil palm predictions on two 100 km blocks held out of training, the best and "
+            "the worst\nof the seven evaluation blocks. Each dot is a plot, its colour says "
+            "whether the model got it right."
+        ),
+        "meilleur": "THE BEST CASE",
+        "pire": "THE WORST CASE",
+        "region_meilleur": "Central basin",
+        "region_pire": "South Kivu",
+        "manquees": "{n} palm plots missed out of {total}",
+        "categories": {
+            "Palmier détecté": "Palm detected",
+            "Correctement écarté": "Correctly excluded",
+            "Fausse alerte": "False alarm",
+            "Palmier manqué": "Palm missed",
+        },
+        "reperage": "The 34 blocks, Congo Basin",
+        "reperage_legende": "grey: training      red: test",
+        "lecture": (
+            "Blues: correct decisions.\n"
+            "Amber and red: errors, these are the ones\n"
+            "that would need human verification."
+        ),
+        "portee": (
+            "Demonstration on two evaluation blocks.\n"
+            "This is not a map of oil palm in the DRC."
+        ),
+        "attributions": (
+            "Labels: Descals et al. 2024, Global Oil Palm extent maps, Zenodo, "
+            "CC BY 4.0.\nImagery: Copernicus Sentinel-1 and Sentinel-2, ESA.   "
+            "Boundaries: USDOS LSIB, public domain."
+        ),
+        "pourcent": "{v:.0f}%",
+    },
+}
 
 PAYS = [
     "Dem Rep of the Congo", "Rep of the Congo", "Central African Rep", "Cameroon",
@@ -73,8 +153,7 @@ def contours_pays():
         .filter(ee.Filter.inList("country_na", PAYS))
         .map(lambda f: ee.Feature(f.geometry().simplify(5000), {"nom": f.get("country_na")}))
     )
-    donnees = frontieres.getInfo()
-    CONTOURS.write_text(json.dumps(donnees), encoding="utf-8")
+    CONTOURS.write_text(json.dumps(frontieres.getInfo()), encoding="utf-8")
     print(f"contours récupérés et mis en cache dans {CONTOURS}")
     return gpd.read_file(CONTOURS)
 
@@ -125,18 +204,17 @@ def dessiner_bloc(axes, points, bloc, etiquette, titre, sous_titre, portee, acce
               color=ENCRE_DOUCE, va="bottom", ha="left")
 
     # Barre d'échelle : un degré de longitude vaut environ 111 km près de l'équateur.
-    largeur = portee
     km = 25
     long_barre = km / 111.0
-    x0 = axes.get_xlim()[0] + largeur * 0.06
-    y0 = axes.get_ylim()[0] + (axes.get_ylim()[1] - axes.get_ylim()[0]) * 0.06
+    x0 = axes.get_xlim()[0] + portee * 0.06
+    y0 = axes.get_ylim()[0] + portee * 0.06
     axes.plot([x0, x0 + long_barre], [y0, y0], color=ENCRE, linewidth=2.4,
               solid_capstyle="butt", zorder=6)
-    axes.text(x0 + long_barre / 2, y0 + largeur * 0.018, f"{km} km", fontsize=8.5,
+    axes.text(x0 + long_barre / 2, y0 + portee * 0.018, f"{km} km", fontsize=8.5,
               color=ENCRE, ha="center", va="bottom", zorder=6)
 
 
-def dessiner_proportions(axes, points, bloc):
+def dessiner_proportions(axes, points, bloc, gabarit):
     """Barre empilée : la composition du bloc, dans l'ordre de la légende.
 
     Elle relie la carte à la matrice de confusion et permet de comparer les deux
@@ -153,7 +231,7 @@ def dessiner_proportions(axes, points, bloc):
         axes.barh(0, part, left=depart, height=1, color=COULEURS[categorie],
                   edgecolor=FOND, linewidth=1.6)
         if part > 0.09:
-            axes.text(depart + part / 2, 0, f"{part * 100:.0f} %", ha="center",
+            axes.text(depart + part / 2, 0, gabarit.format(v=part * 100), ha="center",
                       va="center", fontsize=8.5, color="white", fontweight="bold")
         depart += part
 
@@ -162,19 +240,18 @@ def dessiner_proportions(axes, points, bloc):
     axes.axis("off")
 
 
-def dessiner_reperage(axes, pays, tuiles, blocs_test, mis_en_avant):
+def dessiner_reperage(axes, pays, tuiles, blocs_test, mis_en_avant, mots):
     """Carte de repérage : les 34 blocs, apprentissage et test distingués."""
     pays.plot(ax=axes, color="#DFE6E1", zorder=1)
     pays.boundary.plot(ax=axes, color="#93A49B", linewidth=0.8, zorder=2)
 
-    apprentissage = tuiles[~tuiles["ID"].isin(blocs_test)]
-    test = tuiles[tuiles["ID"].isin(blocs_test)]
-    apprentissage.plot(ax=axes, color=ENCRE_PALE, alpha=0.45, zorder=3)
-    test.plot(ax=axes, color="#B91C1C", alpha=0.9, zorder=4)
+    tuiles[~tuiles["ID"].isin(blocs_test)].plot(
+        ax=axes, color=ENCRE_PALE, alpha=0.45, zorder=3)
+    tuiles[tuiles["ID"].isin(blocs_test)].plot(
+        ax=axes, color=COULEURS["Palmier manqué"], alpha=0.9, zorder=4)
 
     for bloc in mis_en_avant:
-        forme = tuiles[tuiles["ID"] == bloc]
-        centre = forme.geometry.iloc[0].centroid
+        centre = tuiles[tuiles["ID"] == bloc].geometry.iloc[0].centroid
         axes.add_patch(Rectangle(
             (centre.x - 1.15, centre.y - 1.15), 2.3, 2.3,
             fill=False, edgecolor=ENCRE, linewidth=1.5, zorder=5,
@@ -189,37 +266,36 @@ def dessiner_reperage(axes, pays, tuiles, blocs_test, mis_en_avant):
     for cote in axes.spines.values():
         cote.set_color(TRAIT)
         cote.set_linewidth(1)
-    axes.text(0, 1.06, "Les 34 blocs, bassin du Congo", transform=axes.transAxes,
+    axes.text(0, 1.06, mots["reperage"], transform=axes.transAxes,
               fontsize=10, fontweight="bold", color=ENCRE, va="bottom", ha="left")
-    axes.text(0, -0.14,
-              "gris : apprentissage      rouge : test",
-              transform=axes.transAxes, fontsize=8.5, color=ENCRE_PALE,
-              va="top", ha="left")
+    axes.text(0, -0.14, mots["reperage_legende"], transform=axes.transAxes,
+              fontsize=8.5, color=ENCRE_PALE, va="top", ha="left")
 
 
 def main():
+    analyseur = argparse.ArgumentParser()
+    analyseur.add_argument("--langue", choices=sorted(TEXTES), default="fr")
+    mots = TEXTES[analyseur.parse_args().langue]
+    sortie = Path("portfolio") / mots["sortie"]
+
     points = gpd.read_file(PREDICTIONS)
     pays = contours_pays()
     tuiles = gpd.read_file(GRILLE)
     tuiles["ID"] = tuiles["ID"].astype(int)
-
-    blocs_test = sorted(points["bloc"].unique().tolist())
-    meilleur, pire = 34542, 36100
     tuiles = tuiles[tuiles["ID"].isin(
         gpd.read_file(DOSSIER / "echantillons_rdc.geojson")["bloc"].unique().tolist()
     )]
 
+    blocs_test = sorted(points["bloc"].unique().tolist())
+    meilleur, pire = 34542, 36100
+
     figure = plt.figure(figsize=(10.0, 9.0), dpi=200)
     figure.patch.set_facecolor(FOND)
 
-    figure.text(0.05, 0.978,
-                "Le même modèle, deux régions",
-                fontsize=25, fontweight="bold", color=ENCRE, va="top")
-    figure.text(0.05, 0.930,
-                "Prédictions de palmier à huile sur deux blocs de 100 km tenus à l'écart de "
-                "l'apprentissage, le meilleur et le pire\ndes sept blocs d'évaluation. Chaque "
-                "point est une parcelle, sa couleur dit si le modèle a eu raison.",
-                fontsize=11.5, color=ENCRE_DOUCE, va="top", linespacing=1.5)
+    figure.text(0.05, 0.978, mots["titre"], fontsize=25, fontweight="bold",
+                color=ENCRE, va="top")
+    figure.text(0.05, 0.930, mots["chapeau"], fontsize=11.5, color=ENCRE_DOUCE,
+                va="top", linespacing=1.5)
 
     # Rectangles carrés : l'aspect égal les remplit exactement, donc les barres de
     # proportions dessous s'alignent sur les cartes au pixel près.
@@ -237,30 +313,32 @@ def main():
         for g in (n_g, n_d)
     ) + 0.12
 
-    dessiner_bloc(
-        gauche, points, meilleur, "LE MEILLEUR CAS", "Cuvette centrale",
-        f"{(n_g['categorie'] == 'Palmier manqué').sum()} palmeraies manquées "
-        f"sur {(n_g['classe_reelle'] == 'palmier').sum()}",
-        portee, COULEURS["Palmier détecté"],
-    )
-    dessiner_bloc(
-        droite, points, pire, "LE PIRE CAS", "Sud-Kivu",
-        f"{(n_d['categorie'] == 'Palmier manqué').sum()} palmeraies manquées "
-        f"sur {(n_d['classe_reelle'] == 'palmier').sum()}",
-        portee, COULEURS["Palmier manqué"],
-    )
+    for axes, bloc, groupe, etiquette, region, accent in (
+        (gauche, meilleur, n_g, mots["meilleur"], mots["region_meilleur"],
+         COULEURS["Palmier détecté"]),
+        (droite, pire, n_d, mots["pire"], mots["region_pire"],
+         COULEURS["Palmier manqué"]),
+    ):
+        dessiner_bloc(
+            axes, points, bloc, etiquette, region,
+            mots["manquees"].format(
+                n=(groupe["categorie"] == "Palmier manqué").sum(),
+                total=(groupe["classe_reelle"] == "palmier").sum(),
+            ),
+            portee, accent,
+        )
 
     for rect, bloc in ((0.05, meilleur), (0.465, pire)):
         barre = figure.add_axes([rect, 0.318, cote, 0.022])
-        dessiner_proportions(barre, points, bloc)
+        dessiner_proportions(barre, points, bloc, mots["pourcent"])
 
     reperage = figure.add_axes([0.05, 0.092, 0.28, 0.122])
-    dessiner_reperage(reperage, pays, tuiles, blocs_test, [meilleur, pire])
+    dessiner_reperage(reperage, pays, tuiles, blocs_test, [meilleur, pire], mots)
 
     poignees = [
         Line2D([0], [0], marker="o", linestyle="none", markersize=9.5,
                markerfacecolor=COULEURS[c], markeredgecolor="white",
-               markeredgewidth=0.9, label=c)
+               markeredgewidth=0.9, label=mots["categories"][c])
         for c in ORDRE
     ]
     figure.legend(
@@ -269,31 +347,17 @@ def main():
         columnspacing=1.6, labelcolor=ENCRE,
     )
 
-    figure.text(
-        0.42, 0.208,
-        "Bleus : décisions correctes.\n"
-        "Ambre et rouge : erreurs, ce sont elles\n"
-        "qui demanderaient une vérification humaine.",
-        fontsize=10.5, color=ENCRE_DOUCE, va="top", linespacing=1.6,
-    )
-    figure.text(
-        0.42, 0.122,
-        "Démonstration sur deux blocs d'évaluation.\n"
-        "Ce n'est pas une carte du palmier en RDC.",
-        fontsize=10.5, color="#B91C1C", va="top", fontweight="bold", linespacing=1.6,
-    )
-    figure.text(
-        0.05, 0.052,
-        "Étiquettes : Descals et al. 2024, Global Oil Palm extent maps, Zenodo, CC BY 4.0.\n"
-        "Imagerie : Copernicus Sentinel-1 et Sentinel-2, ESA.   "
-        "Contours : USDOS LSIB, domaine public.",
-        fontsize=8.5, color=ENCRE_PALE, va="top", linespacing=1.6,
-    )
+    figure.text(0.42, 0.208, mots["lecture"], fontsize=10.5, color=ENCRE_DOUCE,
+                va="top", linespacing=1.6)
+    figure.text(0.42, 0.122, mots["portee"], fontsize=10.5,
+                color=COULEURS["Palmier manqué"], va="top", fontweight="bold",
+                linespacing=1.6)
+    figure.text(0.05, 0.052, mots["attributions"], fontsize=8.5, color=ENCRE_PALE,
+                va="top", linespacing=1.6)
 
-    SORTIE.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(SORTIE, facecolor=FOND, dpi=200)
-    print(f"{SORTIE} écrit")
-    print(f"blocs de test : {blocs_test}")
+    sortie.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(sortie, facecolor=FOND, dpi=200)
+    print(f"{sortie} écrit")
 
 
 if __name__ == "__main__":
