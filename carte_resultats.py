@@ -289,7 +289,9 @@ def main():
     blocs_test = sorted(points["bloc"].unique().tolist())
     meilleur, pire = 34542, 36100
 
-    figure = plt.figure(figsize=(10.0, 9.0), dpi=200)
+    # 300 points par pouce : 3 000 pixels de large, net sur un ecran haute densite
+    # ou l'image est affichee autour de 1 100 pixels logiques.
+    figure = plt.figure(figsize=(10.0, 9.0), dpi=300)
     figure.patch.set_facecolor(FOND)
 
     figure.text(0.05, 0.978, mots["titre"], fontsize=25, fontweight="bold",
@@ -356,7 +358,7 @@ def main():
                 va="top", linespacing=1.6)
 
     sortie.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(sortie, facecolor=FOND, dpi=200)
+    figure.savefig(sortie, facecolor=FOND, dpi=300)
     print(f"{sortie} écrit")
 
 
