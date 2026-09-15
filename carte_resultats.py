@@ -7,7 +7,7 @@ Lit `data/predictions_test.geojson` et écrit `portfolio/carte-blocs-test.png`, 
 `carte-blocs-test-en.png` en anglais.
 
 La carte montre deux blocs de test côte à côte, le meilleur et le pire, pour rendre
-visible ce que l'écart type de 0,022 entre plis signifie sur le terrain. Les quatre
+visible ce que l'écart type de 0,015 entre plis signifie sur le terrain. Les quatre
 couleurs sont les quatre cases de la matrice de confusion.
 
 Les mentions de licence et la portée du résultat sont gravées dans l'image et non

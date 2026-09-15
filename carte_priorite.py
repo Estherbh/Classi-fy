@@ -12,8 +12,8 @@ un bloc, et la part de palmier réellement présent dans chaque tranche de proba
 
 Le second panneau est le garde-fou du premier. Une carte de priorité seule laisse
 croire qu'une couleur vaut une confirmation ; les barres disent qu'au-dessus de 0,8
-neuf parcelles sur dix sont vraiment du palmier, et qu'entre 0,4 et 0,8 c'est à peu
-près une sur deux.
+plus de neuf parcelles sur dix sont vraiment du palmier, et qu'entre 0,4 et 0,8 c'est
+environ deux sur trois.
 
 Les prédictions sont calculées hors pli sur les 8 658 parcelles : chaque parcelle est
 prédite par un modèle qui n'a jamais vu son bloc. Le fichier
@@ -87,8 +87,8 @@ TEXTES = {
         "parcelles": "{n} parcelles · {p} %",
         "moyenne": "moyenne des {n} parcelles, {p} %",
         "lecture": (
-            "Au-dessus de 0,8, neuf parcelles sur dix sont vraiment\n"
-            "du palmier. Entre 0,4 et 0,8, à peu près une sur deux :\n"
+            "Au-dessus de 0,8, plus de neuf parcelles sur dix sont\n"
+            "du palmier. Entre 0,4 et 0,8, environ deux sur trois :\n"
             "c'est cette tranche que le terrain tranche."
         ),
         "portee": (
@@ -127,8 +127,8 @@ TEXTES = {
         "parcelles": "{n} plots · {p}%",
         "moyenne": "average across all {n} plots, {p}%",
         "lecture": (
-            "Above 0.8, nine plots in ten really are oil palm.\n"
-            "Between 0.4 and 0.8, close to one in two: that band\n"
+            "Above 0.8, more than nine plots in ten are oil palm.\n"
+            "Between 0.4 and 0.8, about two in three: that band\n"
             "is the one field work has to settle."
         ),
         "portee": (
@@ -159,11 +159,10 @@ def predictions_hors_pli():
     if HORS_PLI.exists():
         return gpd.read_file(HORS_PLI)
 
-    from sklearn.ensemble import HistGradientBoostingClassifier
     from sklearn.model_selection import GroupKFold
 
     from modele_binaire import construire_variables
-    from predictions_carte import charger
+    from predictions_carte import charger, modele_retenu
 
     parcelles = charger()
     X = construire_variables(parcelles)
@@ -174,9 +173,7 @@ def predictions_hors_pli():
 
     probabilites = np.zeros(len(parcelles))
     for app, test in GroupKFold(5).split(X, y, groups=blocs):
-        modele = HistGradientBoostingClassifier(
-            max_iter=300, learning_rate=0.08, random_state=0
-        )
+        modele = modele_retenu()
         modele.fit(X.iloc[app], y.iloc[app])
         colonne = list(modele.classes_).index("palmier")
         probabilites[test] = modele.predict_proba(X.iloc[test])[:, colonne]

@@ -18,7 +18,9 @@ chaque exécution.
 from pathlib import Path
 
 import geopandas as gpd
+import joblib
 import pandas as pd
+from sklearn.base import clone
 from sklearn.model_selection import GroupKFold
 
 from modele_binaire import construire_variables
@@ -27,6 +29,7 @@ DOSSIER = Path("data")
 FICHIER_PARCELLES = DOSSIER / "parcelles.parquet"
 FICHIER_POINTS = DOSSIER / "echantillons_rdc.geojson"
 SORTIE = DOSSIER / "predictions_test.geojson"
+FICHIER_MODELE = DOSSIER / "modele_palmier.joblib"
 
 CATEGORIES = {
     ("palmier", "palmier"): "Palmier détecté",
@@ -34,6 +37,13 @@ CATEGORIES = {
     ("pas_de_palmier", "palmier"): "Fausse alerte",
     ("pas_de_palmier", "pas_de_palmier"): "Correctement écarté",
 }
+
+
+def modele_retenu():
+    """Copie vierge du modèle retenu par modele_binaire.py, mêmes réglages."""
+    if not FICHIER_MODELE.exists():
+        raise SystemExit(f"{FICHIER_MODELE} introuvable, lance d'abord modele_binaire.py")
+    return clone(joblib.load(FICHIER_MODELE)["modele"])
 
 
 def charger():
@@ -70,14 +80,13 @@ def main():
         lambda classe: "pas_de_palmier" if classe == "pas_de_palmier" else "palmier"
     )
 
-    # Même découpage que l'évaluation du modèle, pour que la carte montre exactement
-    # les parcelles sur lesquelles les chiffres publiés ont été mesurés.
-    from sklearn.ensemble import HistGradientBoostingClassifier
-
+    # Même découpage et même modèle que l'évaluation, pour que la carte montre
+    # exactement les parcelles et les réponses sur lesquelles les chiffres publiés ont
+    # été mesurés. Le modèle est relu dans le fichier sauvegardé plutôt qu'écrit en
+    # dur : modele_binaire.py choisit l'algorithme à chaque exécution, et la carte
+    # doit suivre ce choix.
     app, test = next(GroupKFold(5).split(X, y, groups=blocs))
-    modele = HistGradientBoostingClassifier(
-        max_iter=300, learning_rate=0.08, random_state=0
-    )
+    modele = modele_retenu()
     modele.fit(X.iloc[app], y.iloc[app])
 
     predictions = modele.predict(X.iloc[test])

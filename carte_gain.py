@@ -12,7 +12,7 @@ courbes de référence disent ce que vaut la réponse : l'ordre parfait donne la
 haute, l'ordre au hasard donne ce qu'on obtiendrait sans modèle.
 
 L'image porte aussi ce que la courbe agrégée cache. Le rappel bloc par bloc, à droite,
-montre que la médiane à 0,89 recouvre quatre blocs sous 0,70 : le gain n'est pas le
+montre que la médiane à 0,90 recouvre trois blocs sous 0,70 : le gain n'est pas le
 même partout, et c'est cette dispersion que la suite du projet doit réduire.
 
 Les probabilités viennent de `data/predictions_hors_pli.geojson`, produit par

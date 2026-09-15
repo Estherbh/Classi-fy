@@ -12,22 +12,22 @@ Binary classification, palm against no palm, evaluated with **spatial** cross-va
 
 | Metric | Value |
 |---|---|
-| Macro F1 (spatial validation, 5 folds) | **0.817 ± 0.022** |
-| Macro F1 (random validation) | 0.835 ± 0.011 |
-| Optimism of random validation | +0.018 |
+| Macro F1 (spatial validation, 5 folds) | **0.821 ± 0.015** |
+| Macro F1 (random validation) | 0.839 ± 0.010 |
+| Optimism of random validation | +0.019 |
 | Floor (always-majority model) | 0.378 |
-| Overall accuracy | 0.83 |
+| Overall accuracy | 0.86 |
 
-The number to report is **0.817**. It is measured on regions the model never saw during training.
+The number to report is **0.821**. It is measured on regions the model never saw during training.
 
-An optimism of +0.018 means the model loses only 1.8 points when moving to a completely different region. It relies on a transferable signal rather than on local artefacts.
+An optimism of +0.019 means the model loses only 1.9 points when moving to a completely different region. It relies on a transferable signal rather than on local artefacts.
 
 ### Per class
 
 | Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
-| palm | 0.86 | 0.87 | 0.87 | 1,090 |
-| no palm | 0.80 | 0.78 | 0.79 | 700 |
+| palm | 0.87 | 0.90 | 0.89 | 1,090 |
+| no palm | 0.84 | 0.79 | 0.81 | 700 |
 
 ### Confusion matrix
 
@@ -35,10 +35,10 @@ Rows: ground truth. Columns: model prediction.
 
 | | predicted palm | predicted no palm |
 |---|---|---|
-| **was palm** | 951 | 139 |
-| **was not palm** | 157 | 543 |
+| **was palm** | 983 | 107 |
+| **was not palm** | 146 | 554 |
 
-Reading: out of 1,090 real palm plots, the model finds 951 and misses 139. Out of 700 palm-free areas, it wrongly flags 157.
+Reading: out of 1,090 real palm plots, the model finds 983 and misses 107. Out of 700 palm-free areas, it wrongly flags 146.
 
 ---
 
@@ -160,7 +160,7 @@ Both splits are computed on every run. Their difference, called **optimism** her
 
 ### Models compared
 
-`RandomForestClassifier` and `HistGradientBoostingClassifier`, both evaluated under spatial validation. Gradient boosting is selected. Both reach 0.815, a difference that is not meaningful: performance comes from the features, not from the algorithm.
+`RandomForestClassifier` and `HistGradientBoostingClassifier`, both evaluated under spatial validation. Random forest is selected, at 0.819 against 0.814 for gradient boosting, a difference that is not meaningful: performance comes from the features, not from the algorithm.
 
 ---
 
@@ -170,32 +170,32 @@ Permutation importance leaves no ambiguity.
 
 | Feature | F1 loss when shuffled |
 |---|---|
-| **vv_vh_moy** | **0.172** |
-| B8_moy | 0.027 |
-| VH_moy | 0.012 |
-| B11_moy | 0.011 |
-| B2_moy | 0.011 |
-| VV_moy | 0.009 |
+| **vv_vh_moy** | **0.170** |
+| B8_moy | 0.033 |
+| VH_moy | 0.017 |
+| VV_moy | 0.013 |
+| ndwi_moy | 0.010 |
+| ndwi_ecart_type | 0.003 |
 
-The difference between the two radar polarisations carries **6.3 times** more signal than the best optical feature.
+The difference between the two radar polarisations carries **5.2 times** more signal than the best optical feature.
 
-The explanation is physical. Palm and tropical forest are both closed canopies, green all year, with nearly identical NDVI seasonal amplitude, 0.04 against 0.03. Optical imagery cannot separate them. Radar measures structure rather than colour: a plantation has aligned trees of uniform height and returns a regular echo, where natural forest returns a disordered one.
+The explanation is physical. Palm and tropical forest are both closed canopies, green all year, with NDVI seasonal amplitudes of the same order, 0.40 for palm against 0.42 for palm-free areas. Optical imagery separates them poorly. Radar measures structure rather than colour: a plantation has aligned trees of uniform height and returns a regular echo, where natural forest returns a disordered one.
 
 ### Measured effect
 
 | Configuration | Spatial F1 | Optimism |
 |---|---|---|
 | Optical only, 3 classes | 0.405 | +0.225 |
-| Optical and radar, 3 classes | 0.561 | +0.066 |
-| Optical and radar, binary | **0.817** | **+0.018** |
+| Optical and radar, 3 classes | 0.542 | +0.089 |
+| Optical and radar, binary | **0.821** | **+0.019** |
 
-The collapse of optimism, from 0.225 to 0.018, matters as much as the score increase. It shows the model stopped relying on local shortcuts.
+The collapse of optimism, from 0.225 to 0.019, matters as much as the score increase. It shows the model stopped relying on local shortcuts.
 
 ---
 
 ## Area of validity
 
-The 34 training blocks span **12.1° to 30.1° east and -4.9° to 4.0° north**, the full width of the Congo Basin, from the Atlantic side to the Great Lakes. Spatial cross-validation measures transfer between regions inside that extent directly, and an optimism of +0.018 says it happens without meaningful loss.
+The 34 training blocks span **12.1° to 30.1° east and -4.9° to 4.0° north**, the full width of the Congo Basin, from the Atlantic side to the Great Lakes. Spatial cross-validation measures transfer between regions inside that extent directly, and an optimism of +0.019 says it happens without meaningful loss.
 
 The domain of validity is therefore the **Congo Basin in humid tropical forest**, not a country. It spans 24 blocks in the DRC and 10 across six neighbours, which is a strength for generalisation: the model was tested across different national contexts and did not break down.
 
@@ -217,13 +217,13 @@ On those environments its behaviour is unknown, not poor but unmeasured. This is
 
 ### What the model can do today
 
-**Check a specific site.** Given a plot or a set of coordinates, it reports whether palm is present, with a precision of 0.86. Out of 100 alerts, 86 are correct.
+**Check a specific site.** Given a plot or a set of coordinates, it reports whether palm is present, with a precision of 0.87. Out of 100 alerts, 87 are correct.
 
 **Prioritise field missions.** The model outputs a probability, not just an answer. Ranking suspect sites by decreasing probability and checking the top ones concentrates a limited patrol budget where the return is highest.
 
 **Audit a declaration.** A concession or an operator claims no plantation occupies a plot: the model provides an independent, dated opinion grounded in public imagery.
 
-**Pre-filter before photo-interpretation.** On a batch of sites to review by eye, first discarding those the model confidently judges palm-free reduces the human workload, provided the 13 % of missed plantations are acceptable.
+**Pre-filter before photo-interpretation.** On a batch of sites to review by eye, first discarding those the model confidently judges palm-free reduces the human workload, provided the 10 % of missed plantations are acceptable.
 
 **Support a report.** The figures are measured under spatial validation and the method is reproducible, hence defensible before a funder or a scientific partner.
 
@@ -273,15 +273,23 @@ The model uses monthly medians. Sentinel-1 revisits every six to twelve days: a 
 
 ---
 
+## Fix of 14 September 2026
+
+Before that date, the twelve monthly Sentinel-2 composites were identical for 100 % of points: each point carried a single optical value, copied twelve times. Radar was not affected.
+
+The cause was one line of `extraire_series_gee.py`. Dividing reflectances by 10,000 returned images stripped of their `system:time_start` property. The monthly filter then found no image, and the fallback to the annual median applied to all twelve months, without raising any error. The fix copies the date back after the division. The seasonal amplitude of 0.04 against 0.03 reported earlier was an artefact of this defect: it was actually 0.000 for both classes.
+
+Measured effect: spatial F1 moves from 0.817 to 0.821, less than the standard deviation across folds. In three classes it drops from 0.561 to 0.542. Giving time back to the optical bands therefore does not clearly improve the model, whose separation still rests on radar. Every figure, map and curve in this document was recomputed on the corrected data. The data, predictions and model from before the fix are kept in `data/` with the `_avant_correctif` suffix.
+
 ## Known limitations
 
 They are stated here because they govern how the model may be used.
 
 **1. The dataset does not reflect the real scarcity of palm.**
-Sampling deliberately targeted the palm-densest window of each tile, hence 60.7 % palm in the dataset. Across the whole DRC, palm covers a fraction of a percent of the territory. The 22 % false alarm rate on palm-free areas is acceptable here, but applied to an entire country it would produce more false positives than true detections. **The model is not validated for national mapping.** It answers "does this plot contain palm", not "where is palm in the DRC".
+Sampling deliberately targeted the palm-densest window of each tile, hence 60.7 % palm in the dataset. Across the whole DRC, palm covers a fraction of a percent of the territory. The 21 % false alarm rate on palm-free areas is acceptable here, but applied to an entire country it would produce more false positives than true detections. **The model is not validated for national mapping.** It answers "does this plot contain palm", not "where is palm in the DRC".
 
 **2. Industrial and smallholder palm are not separable.**
-In the three-class setting the model plateaus at 0.561 and confuses the two types one third of the time. What distinguishes them is plantation geometry, block size and row regularity, information absent from a per-pixel analysis. Texture and neighbourhood features would be required.
+In the three-class setting the model plateaus at 0.542 and confuses the two types more than a third of the time, up to 42 % for smallholder palm. What distinguishes them is plantation geometry, block size and row regularity, information absent from a per-pixel analysis. Texture and neighbourhood features would be required.
 
 **3. The labels are themselves a prediction.**
 The Descals layer is the output of a model, with its own errors. They are inherited here without correction.
@@ -383,6 +391,7 @@ Replaces steps 2 and 3 by reading Sentinel-2 from AWS Open Data. Allow one hour.
 | `preparer_parcelles.py` | step 3, converts the Earth Engine CSV to parquet |
 | `modele_binaire.py` | step 4, final palm against no-palm model |
 | `predictions_carte.py` | geolocated predictions for the test fold, feeding the map |
+| `verifier_site.py` | demo, palm probability for given coordinates |
 | `carte_resultats.py` | map of the four confusion-matrix cases, PNG output, `--langue en` for English |
 | `classification_cultures.ipynb` | analysis notebook, split comparison and three-class evaluation |
 | `organiser_fermiers_py.ipynb` | farmer list organisation, outside the classification pipeline |

@@ -12,22 +12,22 @@ Classification binaire, palmier contre pas de palmier, évaluée en validation c
 
 | Indicateur | Valeur |
 |---|---|
-| F1 macro (validation spatiale, 5 plis) | **0,817 ± 0,022** |
-| F1 macro (validation aléatoire) | 0,835 ± 0,011 |
-| Optimisme de la validation aléatoire | +0,018 |
+| F1 macro (validation spatiale, 5 plis) | **0,821 ± 0,015** |
+| F1 macro (validation aléatoire) | 0,839 ± 0,010 |
+| Optimisme de la validation aléatoire | +0,019 |
 | Plancher (modèle toujours majoritaire) | 0,378 |
-| Justesse globale | 0,83 |
+| Justesse globale | 0,86 |
 
-Le chiffre à retenir est **0,817**. Il est mesuré sur des régions que le modèle n'a jamais vues pendant son apprentissage.
+Le chiffre à retenir est **0,821**. Il est mesuré sur des régions que le modèle n'a jamais vues pendant son apprentissage.
 
-L'optimisme de +0,018 signifie que le modèle ne perd que 1,8 point en changeant complètement de région. Il s'appuie sur un signal transportable et non sur des particularités locales.
+L'optimisme de +0,019 signifie que le modèle ne perd que 1,9 point en changeant complètement de région. Il s'appuie sur un signal transportable et non sur des particularités locales.
 
 ### Détail par classe
 
 | Classe | Précision | Rappel | F1 | Effectif |
 |---|---|---|---|---|
-| palmier | 0,86 | 0,87 | 0,87 | 1 090 |
-| pas_de_palmier | 0,80 | 0,78 | 0,79 | 700 |
+| palmier | 0,87 | 0,90 | 0,89 | 1 090 |
+| pas_de_palmier | 0,84 | 0,79 | 0,81 | 700 |
 
 ### Matrice de confusion
 
@@ -35,10 +35,10 @@ Lignes : la réalité. Colonnes : la prédiction du modèle.
 
 | | prédit palmier | prédit pas de palmier |
 |---|---|---|
-| **était palmier** | 951 | 139 |
-| **était sans palmier** | 157 | 543 |
+| **était palmier** | 983 | 107 |
+| **était sans palmier** | 146 | 554 |
 
-Lecture : sur 1 090 palmeraies réelles, le modèle en retrouve 951 et en rate 139. Sur 700 zones sans palmier, il en signale 157 à tort.
+Lecture : sur 1 090 palmeraies réelles, le modèle en retrouve 983 et en rate 107. Sur 700 zones sans palmier, il en signale 146 à tort.
 
 ---
 
@@ -160,7 +160,7 @@ Les deux découpages sont calculés à chaque exécution. Leur écart, appelé i
 
 ### Modèles comparés
 
-`RandomForestClassifier` et `HistGradientBoostingClassifier`, tous deux évalués en validation spatiale. Le gradient boosting est retenu. Les deux donnent 0,815, l'écart n'est pas significatif : la performance vient des variables, pas de l'algorithme.
+`RandomForestClassifier` et `HistGradientBoostingClassifier`, tous deux évalués en validation spatiale. La forêt aléatoire est retenue, avec 0,819 contre 0,814 pour le gradient boosting. L'écart n'est pas significatif : la performance vient des variables, pas de l'algorithme.
 
 ---
 
@@ -170,32 +170,32 @@ Le classement des variables par importance de permutation est sans ambiguïté.
 
 | Variable | Perte de F1 quand elle est mélangée |
 |---|---|
-| **vv_vh_moy** | **0,172** |
-| B8_moy | 0,027 |
-| VH_moy | 0,012 |
-| B11_moy | 0,011 |
-| B2_moy | 0,011 |
-| VV_moy | 0,009 |
+| **vv_vh_moy** | **0,170** |
+| B8_moy | 0,033 |
+| VH_moy | 0,017 |
+| VV_moy | 0,013 |
+| ndwi_moy | 0,010 |
+| ndwi_ecart_type | 0,003 |
 
-L'écart entre les deux polarisations radar porte **6,3 fois** plus de signal que la meilleure variable optique.
+L'écart entre les deux polarisations radar porte **5,2 fois** plus de signal que la meilleure variable optique.
 
-L'explication est physique. Le palmier et la forêt tropicale sont deux couverts fermés, verts toute l'année, dont l'amplitude saisonnière du NDVI est presque identique, 0,04 contre 0,03. L'optique ne peut pas les séparer. Le radar ne mesure pas la couleur mais la structure : une palmeraie a des arbres alignés, de hauteur homogène, et renvoie un écho régulier là où une forêt naturelle renvoie un écho désordonné.
+L'explication est physique. Le palmier et la forêt tropicale sont deux couverts fermés, verts toute l'année, dont l'amplitude saisonnière du NDVI est du même ordre, 0,40 pour le palmier contre 0,42 pour les zones sans palmier. L'optique les sépare mal. Le radar ne mesure pas la couleur mais la structure : une palmeraie a des arbres alignés, de hauteur homogène, et renvoie un écho régulier là où une forêt naturelle renvoie un écho désordonné.
 
 ### Effet mesuré
 
 | Configuration | F1 spatial | Optimisme |
 |---|---|---|
 | Optique seule, 3 classes | 0,405 | +0,225 |
-| Optique et radar, 3 classes | 0,561 | +0,066 |
-| Optique et radar, binaire | **0,817** | **+0,018** |
+| Optique et radar, 3 classes | 0,542 | +0,089 |
+| Optique et radar, binaire | **0,821** | **+0,019** |
 
-L'effondrement de l'optimisme, de 0,225 à 0,018, est aussi important que la hausse du score. Il indique que le modèle a cessé de s'accrocher à des indices locaux.
+L'effondrement de l'optimisme, de 0,225 à 0,019, est aussi important que la hausse du score. Il indique que le modèle a cessé de s'accrocher à des indices locaux.
 
 ---
 
 ## Zone de validité
 
-Les 34 blocs d'entraînement couvrent **12,1° à 30,1° est et -4,9° à 4,0° nord**, soit toute la largeur du bassin du Congo, de la façade atlantique jusqu'aux Grands Lacs. La validation croisée spatiale mesure directement le transfert d'une région à l'autre à l'intérieur de cette emprise, et l'optimisme de +0,018 dit qu'il se fait sans perte notable.
+Les 34 blocs d'entraînement couvrent **12,1° à 30,1° est et -4,9° à 4,0° nord**, soit toute la largeur du bassin du Congo, de la façade atlantique jusqu'aux Grands Lacs. La validation croisée spatiale mesure directement le transfert d'une région à l'autre à l'intérieur de cette emprise, et l'optimisme de +0,019 dit qu'il se fait sans perte notable.
 
 Le domaine de validité est donc le **bassin du Congo en forêt tropicale humide**, et non un pays. Il couvre 24 blocs en RDC et 10 chez six voisins, ce qui est une force pour la généralisation : le modèle a été testé sur des contextes nationaux différents et n'a pas décroché.
 
@@ -217,13 +217,13 @@ Sur ces milieux, son comportement est inconnu, non pas mauvais mais non mesuré.
 
 ### Ce que le modèle sait faire aujourd'hui
 
-**Vérifier un site précis.** Sur une parcelle ou des coordonnées données, il répond si du palmier est présent, avec une précision de 0,86. Sur 100 alertes, 86 sont justes.
+**Vérifier un site précis.** Sur une parcelle ou des coordonnées données, il répond si du palmier est présent, avec une précision de 0,87. Sur 100 alertes, 87 sont justes.
 
 **Prioriser des missions de terrain.** Le modèle produit une probabilité, pas seulement une réponse. Classer les sites suspects par probabilité décroissante et vérifier les premiers permet de concentrer un budget de patrouille limité là où le rendement est le meilleur.
 
 **Contrôler une déclaration.** Une concession ou un exploitant affirme qu'aucune plantation n'occupe une parcelle : le modèle fournit un avis indépendant, appuyé sur de l'imagerie publique et daté.
 
-**Pré-filtrer avant photo-interprétation.** Sur un lot de sites à examiner à l'œil, écarter d'abord ceux que le modèle juge sans palmier avec une forte confiance réduit la charge humaine, à condition d'accepter les 13 % de palmeraies manquées.
+**Pré-filtrer avant photo-interprétation.** Sur un lot de sites à examiner à l'œil, écarter d'abord ceux que le modèle juge sans palmier avec une forte confiance réduit la charge humaine, à condition d'accepter les 10 % de palmeraies manquées.
 
 **Documenter un rapport.** Les chiffres sont mesurés en validation spatiale et la méthode est reproductible, donc défendables devant un bailleur ou un partenaire scientifique.
 
@@ -273,15 +273,23 @@ Le modèle utilise des médianes mensuelles. Sentinel-1 repasse tous les six à 
 
 ---
 
+## Correctif du 14 septembre 2026
+
+Avant cette date, les douze composites mensuels Sentinel-2 étaient identiques pour 100 % des points : chaque point portait une seule valeur optique, recopiée douze fois. Le radar n'était pas touché.
+
+La cause tenait à une ligne d'`extraire_series_gee.py`. La division des réflectances par 10 000 rendait des images privées de leur propriété `system:time_start`. Le filtre mensuel ne trouvait alors aucune image, et le repli sur la médiane annuelle s'appliquait aux douze mois, sans aucune erreur levée. La correction recopie la date après la division. L'amplitude saisonnière de 0,04 contre 0,03 annoncée auparavant était un artefact de ce défaut : elle valait en réalité 0,000 pour les deux classes.
+
+Effet mesuré : le F1 spatial passe de 0,817 à 0,821, un écart inférieur à l'écart type entre plis. En trois classes il recule de 0,561 à 0,542. Rendre le temps à l'optique n'améliore donc pas nettement le modèle, dont la séparation repose sur le radar comme avant. Tous les chiffres, cartes et courbes de ce document ont été recalculés sur les données corrigées. Les données, prédictions et le modèle d'avant la correction sont conservés dans `data/` avec le suffixe `_avant_correctif`.
+
 ## Limites connues
 
 Elles sont énoncées ici parce qu'elles conditionnent l'usage du modèle.
 
 **1. Le jeu ne reflète pas la rareté réelle du palmier.**
-L'échantillonnage a délibérément visé la fenêtre la plus dense en palmier de chaque tuile, d'où 60,7 % de palmier dans le jeu. Sur la RDC entière, le palmier occupe une fraction de pourcent du territoire. Le taux de fausse alerte de 22 % sur les zones sans palmier est acceptable ici, mais appliqué à un pays entier il produirait un volume de faux positifs supérieur aux vraies détections. **Le modèle n'est pas validé pour produire une carte nationale.** Il répond à la question « cette parcelle contient-elle du palmier », pas à la question « où est le palmier en RDC ».
+L'échantillonnage a délibérément visé la fenêtre la plus dense en palmier de chaque tuile, d'où 60,7 % de palmier dans le jeu. Sur la RDC entière, le palmier occupe une fraction de pourcent du territoire. Le taux de fausse alerte de 21 % sur les zones sans palmier est acceptable ici, mais appliqué à un pays entier il produirait un volume de faux positifs supérieur aux vraies détections. **Le modèle n'est pas validé pour produire une carte nationale.** Il répond à la question « cette parcelle contient-elle du palmier », pas à la question « où est le palmier en RDC ».
 
 **2. Palmier industriel et palmier villageois ne sont pas séparables.**
-En trois classes, le modèle plafonne à 0,561 et confond les deux types dans un tiers des cas. Ce qui les distingue est la géométrie des plantations, taille des blocs et régularité des alignements, information absente d'une analyse par pixel. Il faudrait des variables de texture et de voisinage.
+En trois classes, le modèle plafonne à 0,542 et confond les deux types dans plus d'un tiers des cas, jusqu'à 42 % pour le palmier villageois. Ce qui les distingue est la géométrie des plantations, taille des blocs et régularité des alignements, information absente d'une analyse par pixel. Il faudrait des variables de texture et de voisinage.
 
 **3. Les étiquettes sont elles-mêmes une prédiction.**
 La couche Descals est le produit d'un modèle, avec ses propres erreurs. Elles sont héritées ici sans correction.
@@ -383,6 +391,7 @@ Remplace les étapes 2 et 3 en lisant Sentinel-2 sur AWS Open Data. Compter une 
 | `preparer_parcelles.py` | étape 3, conversion du CSV Earth Engine au format parquet |
 | `modele_binaire.py` | étape 4, modèle final palmier contre pas de palmier |
 | `predictions_carte.py` | prédictions géolocalisées du pli de test, pour la carte |
+| `verifier_site.py` | démonstration, probabilité de palmier sur des coordonnées données |
 | `carte_resultats.py` | carte des quatre cas de la matrice de confusion, PNG, `--langue en` pour l'anglais |
 | `classification_cultures.ipynb` | notebook d'analyse, comparaison des découpages et évaluation à 3 classes |
 | `organiser_fermiers_py.ipynb` | organisation des listes de fermiers, hors chaîne de classification |
