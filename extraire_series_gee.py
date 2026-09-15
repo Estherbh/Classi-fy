@@ -82,7 +82,12 @@ def construire_image(zone):
         .map(masquer_nuages)
         # Réflectance en 0-1, comme dans le notebook.
         .select(BANDES_S2)
-        .map(lambda image: image.divide(10000))
+        # Une opération arithmétique rend une image sans les propriétés de
+        # l'originale, date comprise. Sans cette copie, filterDate ne trouve plus
+        # rien dans composite_mensuel, et les douze mois retombent tous sur la
+        # médiane annuelle : c'est ce qui s'est produit pour 100 % des points.
+        .map(lambda image: image.divide(10000)
+             .copyProperties(image, ["system:time_start"]))
     )
     s1 = (
         ee.ImageCollection("COPERNICUS/S1_GRD")
