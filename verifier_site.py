@@ -13,6 +13,7 @@ calcul se fait côté Google.
 """
 
 import argparse
+from functools import lru_cache
 from pathlib import Path
 
 import ee
@@ -91,6 +92,16 @@ def hors_domaine(lat, lon):
     )
 
 
+class MesureImpossible(Exception):
+    """Le pixel visé n'a de valeur pour au moins une bande sur aucun mois."""
+
+
+@lru_cache(maxsize=1)
+def charger_modele():
+    """Modèle et métadonnées sauvegardés par modele_binaire.py, lus une seule fois."""
+    return joblib.load(FICHIER_MODELE)
+
+
 def mesurer(lat, lon, mots):
     """Renvoie les 96 mesures mensuelles du pixel qui contient ce point.
 
@@ -104,10 +115,26 @@ def mesurer(lat, lon, mots):
 
     absentes = [colonne for colonne in COLONNES if mesures.get(colonne) is None]
     if absentes:
-        raise SystemExit(
+        raise MesureImpossible(
             mots["sans_mesure"].format(n=len(absentes), exemples=", ".join(absentes[:4]))
         )
     return pd.DataFrame([{colonne: mesures[colonne] for colonne in COLONNES}])
+
+
+def probabilite_palmier(lat, lon, mots=TEXTES["en"]):
+    """Probabilité de palmier sur un point, sans rien afficher.
+
+    Partagée par ce script, l'interface de démonstration et le connecteur Claude,
+    pour que les trois donnent exactement la même réponse. Earth Engine doit déjà
+    être initialisé.
+    """
+    charge = charger_modele()
+    modele = charge["modele"]
+    variables = construire_variables(mesurer(lat, lon, mots))
+    probabilites = dict(
+        zip(modele.classes_, modele.predict_proba(variables[charge["variables"]])[0])
+    )
+    return probabilites["palmier"]
 
 
 def main():
@@ -127,8 +154,7 @@ def main():
 
     if not FICHIER_MODELE.exists():
         raise SystemExit(mots["sans_modele"].format(fichier=FICHIER_MODELE))
-    charge = joblib.load(FICHIER_MODELE)
-    modele = charge["modele"]
+    charge = charger_modele()
 
     print(f"{mots['site']}: {arguments.lat:.5f}, {arguments.lon:.5f}")
     if hors_domaine(arguments.lat, arguments.lon):
@@ -136,11 +162,10 @@ def main():
     ee.Initialize(project=arguments.projet)
     print(f"{mots['extraction']}: " + mots["en_cours"].format(annee=ANNEE))
 
-    variables = construire_variables(mesurer(arguments.lat, arguments.lon, mots))
-    probabilites = dict(
-        zip(modele.classes_, modele.predict_proba(variables[charge["variables"]])[0])
-    )
-    probabilite = probabilites["palmier"]
+    try:
+        probabilite = probabilite_palmier(arguments.lat, arguments.lon, mots)
+    except MesureImpossible as erreur:
+        raise SystemExit(str(erreur)) from None
 
     print(f"\n{mots['palmier']}: {probabilite:.2f}")
     print(
