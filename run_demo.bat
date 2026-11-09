@@ -1,14 +1,14 @@
 @echo off
-rem Double-clic pour ouvrir l'interface de demonstration de Classi-fy.
-rem Le chemin complet de Python evite de tomber sur une autre installation.
+rem Double-click to open the Classi-fy demo interface.
+rem The full Python path avoids picking up another installation.
 cd /d "%~dp0"
 title Classi-fy - demo
 echo.
-echo   Demarrage de la demo Classi-fy...
-echo   Le navigateur va s'ouvrir tout seul.
-echo   Pour arreter la demo : fermez simplement cette fenetre.
+echo   Starting the Classi-fy demo...
+echo   The browser will open on its own.
+echo   To stop the demo: just close this window.
 echo.
 "C:\Program Files\Python314\python.exe" demo_interface.py
 echo.
-echo   La demo s'est arretee.
+echo   The demo has stopped.
 pause

@@ -1,23 +1,23 @@
-"""Produit la carte de priorité de vérification destinée aux réseaux sociaux.
+"""Produces the verification priority map for social media.
 
-    python priority_map.py                 version française
-    python priority_map.py --langue en     version anglaise
+    python priority_map.py                 French version
+    python priority_map.py --langue en     English version
 
-Écrit `portfolio/priority-map-fr.png`, ou `priority-map.png` en anglais.
+Writes `portfolio/priority-map-fr.png`, or `priority-map.png` in English.
 
-Cette image répond à une autre question que results_map.py. Celle-là montrait si
-le modèle a eu raison ; celle-ci montre à quoi sert sa probabilité quand il faut
-décider où aller sur le terrain. Deux panneaux : une maquette de carte de mission sur
-un bloc, et la part de palmier réellement présent dans chaque tranche de probabilité.
+This image answers a different question from results_map.py. That one showed whether
+the model was right; this one shows what its probability is for when deciding
+where to go in the field. Two panels: a mock-up of a mission map over
+one block, and the share of palm actually present in each probability band.
 
-Le second panneau est le garde-fou du premier. Une carte de priorité seule laisse
-croire qu'une couleur vaut une confirmation ; les barres disent qu'au-dessus de 0,8
-plus de neuf parcelles sur dix sont vraiment du palmier, et qu'entre 0,4 et 0,8 c'est
-environ deux sur trois.
+The second panel is the safeguard for the first. A priority map alone suggests
+that a colour amounts to a confirmation; the bars say that above 0.8
+more than nine plots in ten really are palm, and that between 0.4 and 0.8 it is
+about two in three.
 
-Les prédictions sont calculées hors pli sur les 8 658 parcelles : chaque parcelle est
-prédite par un modèle qui n'a jamais vu son bloc. Le fichier
-`data/predictions_hors_pli.geojson` sert de cache, il est recalculé s'il manque.
+Predictions are computed out of fold on all 8,658 plots: each plot is
+predicted by a model that never saw its block. The file
+`data/predictions_hors_pli.geojson` serves as a cache, it is recomputed if missing.
 """
 
 import argparse
@@ -40,14 +40,14 @@ HORS_PLI = DOSSIER / "predictions_hors_pli.geojson"
 GRILLE = DOSSIER / "palmier_grille" / "Grid_OilPalm2016-2021.shp"
 ECHANTILLONS = DOSSIER / "echantillons_rdc.geojson"
 
-# Bloc montré en maquette : 200 parcelles, 0,88 de rappel, proche de la moyenne des 34.
-# Emprise 18,86 à 19,76 est et 2,70 à 3,59 nord, soit le Sud-Ubangi.
+# Block shown in the mock-up: 200 plots, 0.88 recall, close to the average of the 34.
+# Extent 18.86 to 19.76 east and 2.70 to 3.59 north, i.e. Sud-Ubangi.
 BLOC = 34546
 
-# Trois niveaux de priorité, pas quatre couleurs de matrice : la décision de terrain
-# n'a que trois issues, on y va d'abord, on regarde ensuite, on laisse.
-# Sarcelle et ambre sont la paire déjà validée du projet. Le gris est délibérément
-# effacé, c'est son rôle, et il garde 15,6 d'écart avec la sarcelle en vision protan.
+# Three priority levels, not four matrix colours: the field decision
+# has only three outcomes, go first, look later, leave.
+# Teal and amber are the project's already validated pair. The grey is deliberately
+# muted, that is its role, and it keeps a 15.6 difference from teal under protan vision.
 HAUT = "#0AA5AE"
 MOYEN = "#C9761B"
 BAS = "#C6CFC9"
@@ -58,7 +58,7 @@ PISTE = "#E2E8E4"
 SEUIL_HAUT = 0.8
 SEUIL_BAS = 0.4
 
-# Tranches affichées en barres, de la plus haute à la plus basse.
+# Bands shown as bars, from highest to lowest.
 TRANCHES = [(0.8, 1.001), (0.6, 0.8), (0.4, 0.6), (0.2, 0.4), (0.0, 0.2)]
 
 TEXTES = {
@@ -77,8 +77,8 @@ TEXTES = {
         "oeil_barres": "CE QUE VAUT LE CLASSEMENT",
         "titre_barres": "{n} parcelles, 34 blocs",
         "sous_barres": "Part de palmier réellement présent, par tranche de probabilité",
-        # Les trois entrées tiennent sur une seule ligne : en français elles doivent
-        # rester courtes, la ligne complète débordait de la figure.
+        # The three entries fit on a single line: in French they must
+        # stay short, the full line overflowed the figure.
         "niveaux": [
             "À vérifier d'abord   0,8 et plus",
             "À regarder ensuite   0,4 à 0,8",
@@ -149,12 +149,12 @@ TEXTES = {
 
 
 def predictions_hors_pli():
-    """Probabilité de chaque parcelle, prédite par un modèle qui ignore son bloc.
+    """Probability of each plot, predicted by a model that never saw its block.
 
-    results_map.py travaille sur un seul pli, soit 1 790 parcelles : assez pour
-    comparer deux blocs, trop peu pour remplir cinq tranches de probabilité. Ici les
-    cinq plis sont parcourus et chaque parcelle reçoit la probabilité du modèle
-    entraîné sans elle, ce qui couvre les 8 658 parcelles et les 34 blocs.
+    results_map.py works on a single fold, i.e. 1,790 plots: enough to
+    compare two blocks, too few to fill five probability bands. Here all
+    five folds are run and each plot gets the probability of the model
+    trained without it, which covers all 8,658 plots and 34 blocks.
     """
     if HORS_PLI.exists():
         return gpd.read_file(HORS_PLI)
@@ -188,12 +188,12 @@ def predictions_hors_pli():
         crs="EPSG:4326",
     )
     resultat.to_file(HORS_PLI, driver="GeoJSON")
-    print(f"{HORS_PLI} écrit, {len(resultat)} parcelles")
+    print(f"{HORS_PLI} written, {len(resultat)} plots")
     return resultat
 
 
 def dessiner_carte(axes, extrait, mots):
-    """Maquette de carte de mission : les parcelles d'un bloc, par niveau de priorité."""
+    """Mission map mock-up: the plots of one block, by priority level."""
     minx, miny, maxx, maxy = extrait.total_bounds
     cx, cy = (minx + maxx) / 2, (miny + maxy) / 2
     portee = max(maxx - minx, maxy - miny) + 0.10
@@ -202,7 +202,7 @@ def dessiner_carte(axes, extrait, mots):
     axes.set_aspect("equal")
     axes.set_facecolor(TERRE)
 
-    # Du moins prioritaire au plus prioritaire : ce qu'il faut voir passe au-dessus.
+    # From lowest to highest priority: what must be seen is drawn on top.
     niveaux = [
         (extrait["probabilite"] < SEUIL_BAS, BAS, BAS_TRAIT, 26, 3),
         ((extrait["probabilite"] >= SEUIL_BAS) & (extrait["probabilite"] < SEUIL_HAUT),
@@ -233,7 +233,7 @@ def dessiner_carte(axes, extrait, mots):
               transform=axes.transAxes, fontsize=10.5, color=ENCRE_DOUCE,
               va="bottom", ha="left")
 
-    # Barre d'échelle : un degré de longitude vaut environ 111 km près de l'équateur.
+    # Scale bar: one degree of longitude is about 111 km near the equator.
     km = 25
     long_barre = km / 111.0
     x0 = axes.get_xlim()[0] + portee * 0.06
@@ -245,15 +245,15 @@ def dessiner_carte(axes, extrait, mots):
 
 
 def nombre(valeur, mots):
-    """Séparateur de milliers propre à la langue : espace en français, virgule en anglais."""
+    """Language-specific thousands separator: space in French, comma in English."""
     return f"{valeur:,}".replace(",", mots["milliers"])
 
 
 def dessiner_barres(axes, points, mots):
-    """Part de palmier réellement présent dans chaque tranche de probabilité.
+    """Share of palm actually present in each probability band.
 
-    La couleur d'une barre est celle du niveau de priorité auquel sa tranche
-    appartient : les deux panneaux parlent alors de la même chose.
+    A bar's colour is that of the priority level its band belongs to:
+    the two panels then speak about the same thing.
     """
     total = len(points)
     positions = list(range(len(TRANCHES)))[::-1]
@@ -276,7 +276,7 @@ def dessiner_barres(axes, points, mots):
                                            p=round(len(sel) / total * 100)),
                   va="center", ha="right", fontsize=9, color=ENCRE_PALE)
 
-    # Repère : sans lui, 91 % n'a rien à quoi se comparer.
+    # Reference line: without it, 91% has nothing to compare with.
     moyenne = points["palmier"].mean()
     axes.axvline(moyenne, color=ENCRE_PALE, linewidth=1.1, linestyle=(0, (4, 3)),
                  zorder=4, ymin=0.05)
@@ -298,7 +298,7 @@ def dessiner_barres(axes, points, mots):
 
 
 def dessiner_reperage(axes, pays, tuiles, mots):
-    """Les 34 blocs du bassin du Congo, avec un cadre sur celui qui est montré."""
+    """The 34 blocks of the Congo Basin, with a frame around the one shown."""
     pays.plot(ax=axes, color="#DFE6E1", zorder=1)
     pays.boundary.plot(ax=axes, color="#93A49B", linewidth=0.8, zorder=2)
     tuiles.plot(ax=axes, color=ENCRE_PALE, alpha=0.45, zorder=3)
@@ -322,14 +322,15 @@ def dessiner_reperage(axes, pays, tuiles, mots):
 
 def main():
     analyseur = argparse.ArgumentParser()
-    analyseur.add_argument("--langue", choices=sorted(TEXTES), default="fr")
+    analyseur.add_argument("--langue", choices=sorted(TEXTES), default="fr",
+                           help="image language, fr or en")
     mots = TEXTES[analyseur.parse_args().langue]
     sortie = Path("portfolio") / mots["sortie"]
 
     points = predictions_hors_pli()
     extrait = points[points["bloc"] == BLOC]
     if extrait.empty:
-        raise SystemExit(f"le bloc {BLOC} est absent de {HORS_PLI}")
+        raise SystemExit(f"block {BLOC} is missing from {HORS_PLI}")
 
     pays = contours_pays()
     tuiles = gpd.read_file(GRILLE)
@@ -377,7 +378,7 @@ def main():
 
     sortie.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(sortie, facecolor=FOND, dpi=300)
-    print(f"{sortie} écrit")
+    print(f"{sortie} written")
 
 
 if __name__ == "__main__":

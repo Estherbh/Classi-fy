@@ -1,13 +1,13 @@
-"""Interface locale de démonstration : une carte, un clic, la probabilité de palmier.
+"""Local demo interface: a map, a click, the oil palm probability.
 
     python demo_interface.py
 
-Ouvre http://127.0.0.1:8000 dans le navigateur. Le serveur n'écoute que sur cette
-machine : aucun autre appareil ne peut s'y connecter, même sur le même réseau.
+Opens http://127.0.0.1:8000 in the browser. The server only listens on this
+machine: no other device can connect to it, even on the same network.
 
-Le calcul est celui de check_site.py, importé et non recopié : l'interface, le
-script et le connecteur Claude donnent donc toujours la même réponse. Compter 20 à
-30 secondes par point, le temps qu'Earth Engine assemble les douze mois d'images.
+The computation is that of check_site.py, imported rather than copied: the interface,
+the script and the Claude connector therefore always give the same answer. Allow 20 to
+30 seconds per point, the time it takes Earth Engine to assemble twelve months of images.
 """
 import glob
 import threading
@@ -28,12 +28,12 @@ from extract_series_gee import ANNEE, PROJET, masquer_nuages
 from check_site import (DOMAINE, MesureImpossible, charger_modele, hors_domaine,
                            probabilite_palmier)
 
-# 127.0.0.1 et non 0.0.0.0 : c'est ce qui rend l'interface privée.
+# 127.0.0.1 and not 0.0.0.0: this is what keeps the interface private.
 HOTE, PORT = "127.0.0.1", 8000
 DOSSIER_PAGE = Path(__file__).parent / "interface"
 SEUIL = 0.5
 
-app = FastAPI(title="Classi-fy, démonstration locale", docs_url=None, redoc_url=None)
+app = FastAPI(title="Classi-fy, local demo", docs_url=None, redoc_url=None)
 
 
 class Demande(BaseModel):
@@ -43,7 +43,7 @@ class Demande(BaseModel):
 
 @lru_cache(maxsize=1)
 def blocs_testes():
-    """Emprise des tuiles de 100 km qui portent au moins un point d'entraînement."""
+    """Extent of the 100 km tiles that hold at least one training point."""
     points = gpd.read_file("data/echantillons_rdc.geojson")
     blocs = []
     for chemin in sorted(glob.glob("data/palmier_extent/*.tif")):
@@ -55,7 +55,7 @@ def blocs_testes():
 
 
 def vignette(lat, lon):
-    """Adresse d'une vignette Sentinel-2 de 1,4 km autour du point, ou None."""
+    """URL of a 1.4 km Sentinel-2 thumbnail around the point, or None."""
     try:
         zone = ee.Geometry.Point([lon, lat]).buffer(700).bounds()
         image = (ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
@@ -66,7 +66,7 @@ def vignette(lat, lon):
         return image.getThumbURL({"region": zone, "dimensions": 600, "format": "png",
                                   "bands": ["B4", "B3", "B2"], "min": 200, "max": 2200})
     except ee.EEException:
-        # La vignette n'est qu'une illustration : son échec ne doit pas masquer la réponse.
+        # The thumbnail is only an illustration: its failure must not hide the answer.
         return None
 
 
@@ -111,12 +111,12 @@ def verifier(demande: Demande):
 
 
 def main():
-    print("Connexion à Earth Engine et chargement du modèle...")
+    print("Connecting to Earth Engine and loading the model...")
     ee.Initialize(project=PROJET)
     charger_modele()
-    print(f"{len(blocs_testes())} blocs testés chargés")
+    print(f"{len(blocs_testes())} tested blocks loaded")
     adresse = f"http://{HOTE}:{PORT}"
-    print(f"Interface prête : {adresse}  (Ctrl+C pour arrêter)")
+    print(f"Interface ready: {adresse}  (Ctrl+C to stop)")
     threading.Timer(1.5, lambda: webbrowser.open(adresse)).start()
     uvicorn.run(app, host=HOTE, port=PORT, log_level="warning")
 

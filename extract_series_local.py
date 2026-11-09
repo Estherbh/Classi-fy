@@ -1,16 +1,16 @@
-"""Étape 2 (variante sans compte) : extrait les séries Sentinel-2 depuis AWS Open Data.
+"""Step 2 (account-free variant): extracts the Sentinel-2 time series from AWS Open Data.
 
-Alternative à extract_series_gee.py : ne demande **aucun compte**, ni Google Earth
-Engine, ni Copernicus. Les images Sentinel-2 L2A sont publiées en accès anonyme sur
-AWS (bucket sentinel-cogs), interrogeables via l'API STAC d'Element 84.
+Alternative to extract_series_gee.py: requires **no account**, neither Google Earth
+Engine nor Copernicus. Sentinel-2 L2A images are published with anonymous access on
+AWS (sentinel-cogs bucket), searchable through Element 84's STAC API.
 
     python extract_series_local.py
-    python extract_series_local.py --fenetres 3   # essai rapide sur 3 zones
+    python extract_series_local.py --fenetres 3   # quick test on 3 areas
 
-Produit directement `data/parcelles.parquet`, le format attendu par le notebook.
+Directly produces `data/parcelles.parquet`, the format expected by the notebook.
 
-Limite par rapport à la variante Earth Engine : pas de radar Sentinel-1, dont le
-bucket AWS est payant. Sans le radar, palmier et forêt restent difficiles à séparer.
+Limitation compared with the Earth Engine variant: no Sentinel-1 radar, whose
+AWS bucket is paid. Without radar, palm and forest remain hard to separate.
 """
 
 import argparse
@@ -30,9 +30,9 @@ DOSSIER = Path("data")
 GRILLE = DOSSIER / "palmier_grille" / "Grid_OilPalm2016-2021.shp"
 RASTERS = DOSSIER / "palmier_extent"
 SORTIE = DOSSIER / "parcelles.parquet"
-# Journal d'avancement : chaque tuile y est écrite dès qu'elle est terminée. Une
-# extraction complète dure une heure et dépend du réseau ; sans ce fichier, la moindre
-# coupure obligerait à tout recommencer.
+# Progress log: each tile is written to it as soon as it is done. A full
+# extraction takes an hour and depends on the network; without this file, the slightest
+# interruption would force a restart from scratch.
 JOURNAL = DOSSIER / "extraction_en_cours.csv"
 
 API_STAC = "https://earth-search.aws.element84.com/v1/search"
@@ -41,7 +41,7 @@ RDC = (12.2, -13.5, 31.3, 5.4)
 ANNEE = 2021
 NUAGES_MAX = 40
 
-# Correspondance entre les noms attendus par le notebook et les noms STAC.
+# Mapping between the names expected by the notebook and the STAC names.
 BANDES = {
     "B2": "blue", "B3": "green", "B4": "red",
     "B8": "nir", "B11": "swir16", "B12": "swir22",
@@ -50,21 +50,21 @@ MOIS = list(range(1, 13))
 
 ETIQUETTES = {0: "pas_de_palmier", 1: "palmier_industriel", 2: "palmier_villageois"}
 
-# Une fenêtre de 512 pixels à 10 m couvre ~5 km. Regrouper les points dans de petites
-# fenêtres plutôt que de les disperser est ce qui rend l'extraction praticable : tous
-# les points d'une fenêtre tombent dans le même bloc interne du COG, donc une seule
-# requête réseau les sert tous. Dispersés, il en faudrait des centaines de milliers.
+# A 512-pixel window at 10 m covers ~5 km. Grouping points into small windows
+# rather than scattering them is what makes the extraction workable: all the
+# points of a window fall in the same internal block of the COG, so a single
+# network request serves them all. Scattered, it would take hundreds of thousands.
 FENETRE_PX = 512
 POINTS_PAR_CLASSE = 100
 
-# 3 = ombre de nuage, 8/9 = nuage probable, 10 = cirrus, 11 = neige.
+# 3 = cloud shadow, 8/9 = probable cloud, 10 = cirrus, 11 = snow.
 SCL_MAUVAIS = {3, 8, 9, 10, 11}
 
 ALEA = np.random.default_rng(42)
 
-# Sans ces délais, GDAL attend indéfiniment si un serveur AWS cesse de répondre en
-# cours de lecture : le script reste bloqué sur une seule requête, sans consommer de
-# processeur ni rien écrire. C'est arrivé, d'où ces garde-fous.
+# Without these timeouts, GDAL waits forever if an AWS server stops responding
+# mid-read: the script hangs on a single request, using no CPU and writing
+# nothing. It happened, hence these safeguards.
 OPTIONS_GDAL = {
     "GDAL_HTTP_CONNECTTIMEOUT": 15,
     "GDAL_HTTP_TIMEOUT": 30,
@@ -76,7 +76,7 @@ OPTIONS_GDAL = {
 
 
 def interroger_stac(bbox, debut, fin, limite=20):
-    """Cherche les scènes Sentinel-2 peu nuageuses couvrant une emprise."""
+    """Searches for low-cloud Sentinel-2 scenes covering an extent."""
     requete = {
         "collections": ["sentinel-2-l2a"],
         "bbox": list(bbox),
@@ -100,16 +100,16 @@ def interroger_stac(bbox, debut, fin, limite=20):
 
 
 def choisir_fenetre(donnees):
-    """Repère la zone la plus riche en palmier dans une tuile.
+    """Finds the area richest in palm within a tile.
 
-    Une fenêtre prise au hasard tomberait presque toujours sur de la forêt : le palmier
-    n'occupe qu'une fraction de pourcent des pixels.
+    A randomly chosen window would almost always land on forest: palm
+    covers only a fraction of a percent of the pixels.
     """
     hauteur, largeur = donnees.shape
     if hauteur < FENETRE_PX or largeur < FENETRE_PX:
         return None
 
-    # Densité de palmier par bloc, calculée sur une version décimée pour rester rapide.
+    # Palm density per block, computed on a decimated version to stay fast.
     pas = FENETRE_PX // 8
     grossier = (donnees[::pas, ::pas] > 0).astype(np.float32)
     cote = max(1, FENETRE_PX // pas)
@@ -129,7 +129,7 @@ def choisir_fenetre(donnees):
 
 
 def points_de_la_fenetre(chemin, identifiant):
-    """Tire des points étiquetés dans la zone la plus dense d'une tuile."""
+    """Draws labelled points in the densest area of a tile."""
     with rasterio.open(chemin) as source:
         fenetre = choisir_fenetre(source.read(1))
         if fenetre is None:
@@ -162,10 +162,10 @@ def points_de_la_fenetre(chemin, identifiant):
 
 
 def lire_scene(scene, longitudes, latitudes):
-    """Lit les six bandes d'une scène aux points donnés, nuages masqués.
+    """Reads the six bands of a scene at the given points, clouds masked.
 
-    Retourne un tableau (n_points, 6) en réflectance 0-1, avec NaN là où le pixel est
-    nuageux ou hors emprise.
+    Returns an array (n_points, 6) in 0-1 reflectance, with NaN where the pixel is
+    cloudy or outside the extent.
     """
     with rasterio.open(scene["assets"]["scl"]["href"]) as source:
         coords_x, coords_y = transformer_coords(
@@ -188,7 +188,7 @@ def lire_scene(scene, longitudes, latitudes):
                 [valeur[0] for valeur in source.sample(zip(coords_x, coords_y))],
                 dtype=np.float32,
             )
-        # 0 = hors emprise de la scène (les tuiles Sentinel-2 sont partiellement vides).
+        # 0 = outside the scene's extent (Sentinel-2 tiles are partly empty).
         brut[brut == 0] = np.nan
         mesures[:, indice] = brut / 10000.0
 
@@ -197,7 +197,7 @@ def lire_scene(scene, longitudes, latitudes):
 
 
 def traiter_fenetre(points, bbox):
-    """Construit les 12 séries mensuelles pour tous les points d'une fenêtre."""
+    """Builds the 12 monthly series for all the points of a window."""
     longitudes = [point["lon"] for point in points]
     latitudes = [point["lat"] for point in points]
     mensuel = {}
@@ -210,15 +210,15 @@ def traiter_fenetre(points, bbox):
         scenes = interroger_stac(bbox, debut, fin)
         scenes.sort(key=lambda s: s["properties"].get("eo:cloud_cover", 100))
 
-        # On s'arrête dès qu'une scène couvre tous les points : inutile d'en empiler
-        # d'autres, et chacune coûte des requêtes réseau.
+        # Stop as soon as one scene covers all the points: no need to stack
+        # more, and each one costs network requests.
         cumul = None
         for scene in scenes[:3]:
             try:
                 mesures = lire_scene(scene, longitudes, latitudes)
             except (rasterio.errors.RasterioIOError, OSError) as erreur:
-                # Une scène illisible ne doit pas condamner toute l'extraction.
-                print(f"    scène {scene['id']} ignorée : {erreur}", flush=True)
+                # One unreadable scene must not doom the whole extraction.
+                print(f"    scene {scene['id']} skipped: {erreur}", flush=True)
                 continue
             if mesures is None:
                 continue
@@ -231,8 +231,8 @@ def traiter_fenetre(points, bbox):
 
 
 def assembler(points, mensuel):
-    """Assemble les mesures en lignes au format du notebook."""
-    # Médiane annuelle par point : sert à combler les mois entièrement nuageux.
+    """Assembles the measurements into rows in the notebook's format."""
+    # Annual median per point: used to fill fully cloudy months.
     empile = np.stack(
         [m for m in mensuel.values() if m is not None], axis=0
     ) if any(m is not None for m in mensuel.values()) else None
@@ -244,7 +244,7 @@ def assembler(points, mensuel):
     lignes = []
     for index, point in enumerate(points):
         if np.isnan(secours[index]).any():
-            continue  # Point jamais vu sans nuage de toute l'année.
+            continue  # Point never seen cloud-free all year.
         ligne = {"classe": point["classe"], "bloc": point["bloc"]}
         for mois in MOIS:
             mesures = mensuel[mois]
@@ -263,14 +263,14 @@ def main():
     analyseur = argparse.ArgumentParser()
     analyseur.add_argument(
         "--fenetres", type=int, default=None,
-        help="limite le nombre de tuiles traitées (pour un essai rapide)",
+        help="limits the number of tiles processed (for a quick test)",
     )
     arguments = analyseur.parse_args()
 
     if not GRILLE.exists():
         raise SystemExit(
-            f"{GRILLE} introuvable, télécharge et décompresse les fichiers Zenodo "
-            "dans data/ (voir sample_oil_palm.py)."
+            f"{GRILLE} not found, download and unzip the Zenodo files "
+            "into data/ (see sample_oil_palm.py)."
         )
 
     import geopandas as gpd
@@ -284,10 +284,10 @@ def main():
     deja_faites = set()
     if JOURNAL.exists():
         deja_faites = set(pd.read_csv(JOURNAL)["bloc"].unique())
-        print(f"Reprise : {len(deja_faites)} tuiles déjà extraites, elles seront sautées")
+        print(f"Resuming: {len(deja_faites)} tiles already extracted, they will be skipped")
 
     restantes = [t for t in tuiles if t not in deja_faites]
-    print(f"{len(restantes)} tuiles à traiter\n", flush=True)
+    print(f"{len(restantes)} tiles to process\n", flush=True)
 
     with rasterio.Env(**OPTIONS_GDAL):
         for numero, identifiant in enumerate(restantes, 1):
@@ -297,8 +297,8 @@ def main():
             points, bbox = points_de_la_fenetre(chemin, identifiant)
             if not points:
                 print(
-                    f"[{numero}/{len(restantes)}] tuile {identifiant} : "
-                    "pas de palmier, ignorée",
+                    f"[{numero}/{len(restantes)}] tile {identifiant}: "
+                    "no palm, skipped",
                     flush=True,
                 )
                 continue
@@ -311,21 +311,21 @@ def main():
                 )
             perdus = len(points) - len(lignes)
             print(
-                f"[{numero}/{len(restantes)}] tuile {identifiant} : "
-                f"{len(lignes)} points retenus"
-                + (f", {perdus} perdus (nuages toute l'année)" if perdus else ""),
+                f"[{numero}/{len(restantes)}] tile {identifiant}: "
+                f"{len(lignes)} points kept"
+                + (f", {perdus} lost (clouds all year)" if perdus else ""),
                 flush=True,
             )
 
     if not JOURNAL.exists():
-        raise SystemExit("Aucun point exploitable, vérifie la connexion réseau.")
+        raise SystemExit("No usable point, check the network connection.")
 
     donnees = pd.read_csv(JOURNAL)
     donnees.to_parquet(SORTIE, index=False)
 
-    print(f"\n{SORTIE} écrit : {len(donnees)} parcelles, {donnees['bloc'].nunique()} blocs")
+    print(f"\n{SORTIE} written: {len(donnees)} plots, {donnees['bloc'].nunique()} blocks")
     print(donnees["classe"].value_counts().to_string())
-    print("\nRelance maintenant crop_classification.ipynb : il basculera seul.")
+    print("\nNow rerun crop_classification.ipynb: it will switch over on its own.")
 
 
 if __name__ == "__main__":

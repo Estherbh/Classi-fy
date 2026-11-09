@@ -1,23 +1,23 @@
-"""Produit la courbe de gain de mission destinée aux réseaux sociaux.
+"""Produces the field mission gain curve for social media.
 
-    python gain_map.py                 version française
-    python gain_map.py --langue en     version anglaise
+    python gain_map.py                 French version
+    python gain_map.py --langue en     English version
 
-Écrit `portfolio/field-gain-fr.png`, ou `field-gain.png` en anglais.
+Writes `portfolio/field-gain-fr.png`, or `field-gain.png` in English.
 
-La question posée est celle d'un chef de mission, pas celle d'un modélisateur : si on
-visite les parcelles dans l'ordre du modèle, combien de palmeraies trouve-t-on après
-un quart des visites, après la moitié. La courbe répond en une lecture, et les deux
-courbes de référence disent ce que vaut la réponse : l'ordre parfait donne la borne
-haute, l'ordre au hasard donne ce qu'on obtiendrait sans modèle.
+The question asked is a mission leader's, not a modeller's: if plots are
+visited in the model's order, how many plantations are found after
+a quarter of the visits, after half. The curve answers at a glance, and the two
+reference curves say what the answer is worth: the perfect order gives the upper
+bound, the random order gives what you would get without a model.
 
-L'image porte aussi ce que la courbe agrégée cache. Le rappel bloc par bloc, à droite,
-montre que la médiane à 0,90 recouvre trois blocs sous 0,70 : le gain n'est pas le
-même partout, et c'est cette dispersion que la suite du projet doit réduire.
+The image also shows what the aggregate curve hides. The block-by-block recall, on the
+right, shows that the 0.90 median covers three blocks below 0.70: the gain is not the
+same everywhere, and this spread is what the next stage of the project must reduce.
 
-Les probabilités viennent de `data/predictions_hors_pli.geojson`, produit par
-priority_map.py : chaque parcelle est prédite par un modèle qui n'a jamais vu son
-bloc.
+Probabilities come from `data/predictions_hors_pli.geojson`, produced by
+priority_map.py: each plot is predicted by a model that never saw its
+block.
 """
 
 import argparse
@@ -39,9 +39,9 @@ HASARD = "#93A49B"
 VOILE = "#DCEEEF"
 PISTE = "#E2E8E4"
 
-# Seuil de décision du modèle, celui qui produit les 0,87 de rappel annoncés.
+# The model's decision threshold, the one that yields the reported 0.87 recall.
 SEUIL = 0.5
-# Un bloc sous ce rappel est compté à part : c'est la queue que le projet doit traiter.
+# A block below this recall is counted separately: it is the tail the project must address.
 RAPPEL_BAS = 0.70
 
 TEXTES = {
@@ -124,7 +124,7 @@ TEXTES = {
 
 
 def courbe(points):
-    """Part cumulée de palmeraies trouvées, en visitant dans l'ordre du modèle."""
+    """Cumulative share of plantations found, visiting in the model's order."""
     tri = points.sort_values("probabilite", ascending=False)
     trouvees = np.cumsum(tri["palmier"].values) / tri["palmier"].sum()
     visitees = np.arange(1, len(tri) + 1) / len(tri)
@@ -132,11 +132,11 @@ def courbe(points):
 
 
 def dessiner_courbe(axes, visitees, trouvees, prevalence, mots):
-    """Les trois ordres de visite : le parfait, celui du modèle, le hasard."""
+    """The three visiting orders: the perfect one, the model's, random."""
     axes.set_facecolor(FOND)
 
-    # Ordre parfait : toutes les palmeraies d'abord, donc une pente de 1 / prévalence
-    # jusqu'à épuisement. C'est la borne que rien ne peut dépasser.
+    # Perfect order: all plantations first, hence a slope of 1 / prevalence
+    # until exhausted. It is the bound nothing can exceed.
     x_parfait = np.array([0, prevalence, 1])
     y_parfait = np.array([0, 1, 1])
     axes.plot(x_parfait, y_parfait, color=PARFAIT, linewidth=1.4,
@@ -148,7 +148,7 @@ def dessiner_courbe(axes, visitees, trouvees, prevalence, mots):
     axes.plot(visitees, trouvees, color=MODELE, linewidth=3.0, zorder=4,
               solid_capstyle="round")
 
-    # Repère de lecture : la moitié des palmeraies, et ce qu'elle coûte en visites.
+    # Reading guide: half the plantations, and what it costs in visits.
     cout = float(np.interp(0.5, trouvees, visitees))
     axes.plot([0, 0.5], [0.5, 0.5], color=ENCRE_PALE, linewidth=1.0,
               linestyle=(0, (1, 2)), zorder=3)
@@ -160,7 +160,7 @@ def dessiner_courbe(axes, visitees, trouvees, prevalence, mots):
     axes.text(0.012, 0.515, mots["reperes"], fontsize=9.5, color=ENCRE_PALE,
               va="bottom", ha="left")
 
-    # Étiquettes directes : trois courbes, aucune légende à décoder.
+    # Direct labels: three curves, no legend to decode.
     axes.text(0.60, 0.615, mots["ordre_modele"], fontsize=12, fontweight="bold",
               color=MODELE, va="center", ha="left")
     axes.text(prevalence * 0.52, 0.90, mots["ordre_parfait"], fontsize=10,
@@ -189,12 +189,12 @@ def dessiner_courbe(axes, visitees, trouvees, prevalence, mots):
 
 
 def dessiner_blocs(axes, rappels, mots):
-    """Rappel bloc par bloc : la dispersion que la courbe agrégée ne montre pas."""
+    """Block-by-block recall: the spread the aggregate curve does not show."""
     axes.set_facecolor(FOND)
     axes.barh(0, 1.0, height=0.30, left=0, color=PISTE, zorder=1)
 
     mediane = float(np.median(rappels))
-    # Décalage vertical alterné : sans lui les blocs proches se recouvrent.
+    # Alternating vertical offset: without it, nearby blocks overlap.
     for rang, valeur in enumerate(np.sort(rappels)):
         faible = valeur < RAPPEL_BAS
         axes.scatter([valeur], [(rang % 2) * 0.16 - 0.08], s=64,
@@ -219,7 +219,8 @@ def dessiner_blocs(axes, rappels, mots):
 
 def main():
     analyseur = argparse.ArgumentParser()
-    analyseur.add_argument("--langue", choices=sorted(TEXTES), default="fr")
+    analyseur.add_argument("--langue", choices=sorted(TEXTES), default="fr",
+                           help="image language, fr or en")
     mots = TEXTES[analyseur.parse_args().langue]
     sortie = Path("portfolio") / mots["sortie"]
 
@@ -245,8 +246,8 @@ def main():
     axes_courbe = figure.add_axes([0.088, 0.245, 0.435, 0.535])
     dessiner_courbe(axes_courbe, visitees, trouvees, prevalence, mots)
 
-    # Colonne de droite : les deux chiffres que la courbe met une lecture à extraire,
-    # puis la dispersion entre blocs.
+    # Right column: the two numbers the curve takes a reading to extract,
+    # then the spread between blocks.
     gauche = 0.585
     for haut, (gabarit, legende), valeur in zip(
         (0.790, 0.605), mots["tuiles"], (cout_moitie, cout_neuf)
@@ -275,7 +276,7 @@ def main():
 
     sortie.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(sortie, facecolor=FOND, dpi=300)
-    print(f"{sortie} écrit")
+    print(f"{sortie} written")
 
 
 if __name__ == "__main__":

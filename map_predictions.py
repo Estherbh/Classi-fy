@@ -1,18 +1,18 @@
-"""Produit le fichier de prédictions géolocalisées qui alimente la carte.
+"""Produces the file of geolocated predictions that feeds the map.
 
     python map_predictions.py
 
-Écrit `data/predictions_test.geojson` : un point par parcelle du pli de test, avec sa
-classe réelle, la prédiction du modèle, la probabilité et la catégorie de la matrice de
-confusion.
+Writes `data/predictions_test.geojson`: one point per plot of the test fold, with its
+actual class, the model's prediction, the probability and the confusion-matrix
+category.
 
-Les coordonnées ne figurent pas dans parcelles.parquet : l'export Earth Engine a été
-lancé avec `geometries=False`. Elles sont donc reprises de echantillons_rdc.geojson,
-ligne à ligne. Cet appariement a été vérifié de deux façons, l'ordre des couples classe
-et bloc concorde sur les 8 658 lignes, et les valeurs de bandes de plusieurs points
-tirés au hasard concordent avec un nouvel échantillonnage Earth Engine aux coordonnées
-correspondantes. Le contrôle ci-dessous rejoue la première de ces deux vérifications à
-chaque exécution.
+The coordinates are not in parcelles.parquet: the Earth Engine export was run
+with `geometries=False`. They are therefore taken from echantillons_rdc.geojson,
+row by row. This matching was checked in two ways: the order of the class and
+block pairs agrees on all 8,658 rows, and the band values of several randomly
+drawn points agree with a fresh Earth Engine sampling at the corresponding
+coordinates. The check below replays the first of these two checks on every
+run.
 """
 
 from pathlib import Path
@@ -31,6 +31,7 @@ FICHIER_POINTS = DOSSIER / "echantillons_rdc.geojson"
 SORTIE = DOSSIER / "predictions_test.geojson"
 FICHIER_MODELE = DOSSIER / "modele_palmier.joblib"
 
+# Category labels stored in the output file and read back by the map scripts.
 CATEGORIES = {
     ("palmier", "palmier"): "Palmier détecté",
     ("palmier", "pas_de_palmier"): "Palmier manqué",
@@ -40,21 +41,21 @@ CATEGORIES = {
 
 
 def modele_retenu():
-    """Copie vierge du modèle retenu par binary_model.py, mêmes réglages."""
+    """Blank copy of the model selected by binary_model.py, same settings."""
     if not FICHIER_MODELE.exists():
-        raise SystemExit(f"{FICHIER_MODELE} introuvable, lance d'abord binary_model.py")
+        raise SystemExit(f"{FICHIER_MODELE} not found, run binary_model.py first")
     return clone(joblib.load(FICHIER_MODELE)["modele"])
 
 
 def charger():
-    """Recolle les mesures et les coordonnées, après contrôle de l'appariement."""
+    """Joins measurements and coordinates back together, after checking the matching."""
     parcelles = pd.read_parquet(FICHIER_PARCELLES)
     points = gpd.read_file(FICHIER_POINTS)
 
     if len(parcelles) != len(points):
         raise SystemExit(
-            f"{len(parcelles)} parcelles contre {len(points)} points : "
-            "les deux fichiers ne viennent pas du même échantillonnage."
+            f"{len(parcelles)} plots against {len(points)} points: "
+            "the two files do not come from the same sampling."
         )
     concordant = (
         (parcelles["classe"].values == points["classe"].values)
@@ -62,8 +63,8 @@ def charger():
     )
     if not concordant.all():
         raise SystemExit(
-            f"Appariement rompu sur {(~concordant).sum()} lignes. "
-            "Relance l'export Earth Engine en incluant les coordonnées."
+            f"Matching broken on {(~concordant).sum()} rows. "
+            "Rerun the Earth Engine export including the coordinates."
         )
 
     parcelles = parcelles.copy()
@@ -80,11 +81,10 @@ def main():
         lambda classe: "pas_de_palmier" if classe == "pas_de_palmier" else "palmier"
     )
 
-    # Même découpage et même modèle que l'évaluation, pour que la carte montre
-    # exactement les parcelles et les réponses sur lesquelles les chiffres publiés ont
-    # été mesurés. Le modèle est relu dans le fichier sauvegardé plutôt qu'écrit en
-    # dur : binary_model.py choisit l'algorithme à chaque exécution, et la carte
-    # doit suivre ce choix.
+    # Same split and same model as the evaluation, so that the map shows exactly
+    # the plots and answers on which the published numbers were measured. The model
+    # is read back from the saved file rather than hard-coded: binary_model.py
+    # chooses the algorithm on each run, and the map must follow that choice.
     app, test = next(GroupKFold(5).split(X, y, groups=blocs))
     modele = modele_retenu()
     modele.fit(X.iloc[app], y.iloc[app])
@@ -111,13 +111,13 @@ def main():
     )
     resultat.to_file(SORTIE, driver="GeoJSON")
 
-    print(f"{len(app)} parcelles d'apprentissage, {len(test)} de test")
-    print(f"{resultat['bloc'].nunique()} blocs de test : "
+    print(f"{len(app)} training plots, {len(test)} test plots")
+    print(f"{resultat['bloc'].nunique()} test blocks: "
           f"{sorted(resultat['bloc'].unique().tolist())}")
-    print(f"\nemprise : {resultat.total_bounds.round(2).tolist()}")
+    print(f"\nextent: {resultat.total_bounds.round(2).tolist()}")
     print()
     print(resultat["categorie"].value_counts().to_string())
-    print(f"\n{SORTIE} écrit")
+    print(f"\n{SORTIE} written")
 
 
 if __name__ == "__main__":

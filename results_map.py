@@ -1,18 +1,18 @@
-"""Produit la carte des résultats destinée au portfolio et aux réseaux sociaux.
+"""Produces the results map for the portfolio and social media.
 
-    python results_map.py                 version française
-    python results_map.py --langue en     version anglaise
+    python results_map.py                 French version
+    python results_map.py --langue en     English version
 
-Lit `data/predictions_test.geojson` et écrit `portfolio/test-blocks-map-fr.png`, ou
-`test-blocks-map.png` en anglais.
+Reads `data/predictions_test.geojson` and writes `portfolio/test-blocks-map-fr.png`, or
+`test-blocks-map.png` in English.
 
-La carte montre deux blocs de test côte à côte, le meilleur et le pire, pour rendre
-visible ce que l'écart type de 0,015 entre plis signifie sur le terrain. Les quatre
-couleurs sont les quatre cases de la matrice de confusion.
+The map shows two test blocks side by side, the best and the worst, to make
+visible what the 0.015 standard deviation between folds means on the ground. The four
+colours are the four cells of the confusion matrix.
 
-Les mentions de licence et la portée du résultat sont gravées dans l'image et non
-laissées au texte d'accompagnement : une image partagée sur un réseau social circule
-sans sa légende.
+The licence notices and the scope of the result are burned into the image rather than
+left to the accompanying text: an image shared on social media travels
+without its caption.
 """
 
 import argparse
@@ -31,18 +31,18 @@ PREDICTIONS = DOSSIER / "predictions_test.geojson"
 CONTOURS = DOSSIER / "contours_pays.geojson"
 GRILLE = DOSSIER / "palmier_grille" / "Grid_OilPalm2016-2021.shp"
 
-# Palette validée sur toutes les paires : écart minimal 10,4 en vision déficiente,
-# 15,3 en vision normale. Froid pour les décisions correctes, chaud pour les erreurs.
-# La paire critique est ambre contre rouge, les deux types d'erreur : ils n'ont pas le
-# même coût opérationnel, les confondre viderait la carte de son intérêt. Un rouge plus
-# vif tombe sous le plancher, ne pas l'éclaircir.
+# Palette validated on every pair: minimum difference 10.4 under colour-vision
+# deficiency, 15.3 under normal vision. Cool for correct decisions, warm for errors.
+# The critical pair is amber against red, the two kinds of error: they do not have the
+# same operational cost, confusing them would empty the map of its point. A brighter
+# red falls below the floor, do not lighten it.
 COULEURS = {
     "Palmier détecté": "#0AA5AE",
     "Correctement écarté": "#2C5FBF",
     "Fausse alerte": "#C9761B",
     "Palmier manqué": "#B91C1C",
 }
-# Clés de données, toujours en français : elles viennent du fichier de prédictions.
+# Data keys, always in French: they come from the predictions file.
 ORDRE = ["Palmier détecté", "Correctement écarté", "Fausse alerte", "Palmier manqué"]
 
 ENCRE = "#0F1A15"
@@ -137,9 +137,9 @@ PAYS = [
 
 
 def contours_pays():
-    """Contours simplifiés, récupérés une fois puis mis en cache localement.
+    """Simplified boundaries, fetched once then cached locally.
 
-    Source USDOS LSIB, domaine public, via Earth Engine.
+    Source USDOS LSIB, public domain, through Earth Engine.
     """
     if CONTOURS.exists():
         return gpd.read_file(CONTOURS)
@@ -154,15 +154,15 @@ def contours_pays():
         .map(lambda f: ee.Feature(f.geometry().simplify(5000), {"nom": f.get("country_na")}))
     )
     CONTOURS.write_text(json.dumps(frontieres.getInfo()), encoding="utf-8")
-    print(f"contours récupérés et mis en cache dans {CONTOURS}")
+    print(f"boundaries fetched and cached in {CONTOURS}")
     return gpd.read_file(CONTOURS)
 
 
 def dessiner_bloc(axes, points, bloc, etiquette, titre, sous_titre, portee, accent):
-    """Un panneau : les points d'un bloc de test, colorés par case de la matrice.
+    """One panel: the points of a test block, coloured by confusion-matrix cell.
 
-    `portee` impose la même largeur en degrés aux deux panneaux : sans cela ils
-    seraient à des échelles différentes et la comparaison serait faussée.
+    `portee` forces the same width in degrees on both panels: otherwise they
+    would be at different scales and the comparison would be skewed.
     """
     extrait = points[points["bloc"] == bloc]
     minx, miny, maxx, maxy = extrait.total_bounds
@@ -176,8 +176,8 @@ def dessiner_bloc(axes, points, bloc, etiquette, titre, sous_titre, portee, acce
         sel = extrait[extrait["categorie"] == categorie]
         if sel.empty:
             continue
-        # Les erreurs sont dessinées plus grandes et par-dessus : ce sont elles
-        # que la carte doit rendre visibles.
+        # Errors are drawn larger and on top: they are what
+        # the map must make visible.
         erreur = categorie in ("Fausse alerte", "Palmier manqué")
         axes.scatter(
             sel.geometry.x, sel.geometry.y,
@@ -195,7 +195,7 @@ def dessiner_bloc(axes, points, bloc, etiquette, titre, sous_titre, portee, acce
     axes.set_xticks([])
     axes.set_yticks([])
 
-    # L'interlettrage se fait à la main : matplotlib ne l'expose pas.
+    # Letter spacing is done by hand: matplotlib does not expose it.
     axes.text(0, 1.155, " ".join(etiquette), transform=axes.transAxes, fontsize=9.5,
               fontweight="bold", color=accent, va="bottom", ha="left")
     axes.text(0, 1.075, titre, transform=axes.transAxes, fontsize=15,
@@ -203,7 +203,7 @@ def dessiner_bloc(axes, points, bloc, etiquette, titre, sous_titre, portee, acce
     axes.text(0, 1.018, sous_titre, transform=axes.transAxes, fontsize=10.5,
               color=ENCRE_DOUCE, va="bottom", ha="left")
 
-    # Barre d'échelle : un degré de longitude vaut environ 111 km près de l'équateur.
+    # Scale bar: one degree of longitude is about 111 km near the equator.
     km = 25
     long_barre = km / 111.0
     x0 = axes.get_xlim()[0] + portee * 0.06
@@ -215,10 +215,10 @@ def dessiner_bloc(axes, points, bloc, etiquette, titre, sous_titre, portee, acce
 
 
 def dessiner_proportions(axes, points, bloc, gabarit):
-    """Barre empilée : la composition du bloc, dans l'ordre de la légende.
+    """Stacked bar: the block's composition, in legend order.
 
-    Elle relie la carte à la matrice de confusion et permet de comparer les deux
-    blocs d'un coup d'œil, ce que la dispersion des points ne montre pas bien.
+    It links the map to the confusion matrix and lets the two blocks be compared
+    at a glance, which the scatter of points does not show well.
     """
     extrait = points[points["bloc"] == bloc]
     total = len(extrait)
@@ -227,7 +227,7 @@ def dessiner_proportions(axes, points, bloc, gabarit):
         part = (extrait["categorie"] == categorie).sum() / total
         if part == 0:
             continue
-        # Un fin liseré de fond sépare les segments, comme sur les autres visuels.
+        # A thin background-coloured edge separates the segments, as in the other visuals.
         axes.barh(0, part, left=depart, height=1, color=COULEURS[categorie],
                   edgecolor=FOND, linewidth=1.6)
         if part > 0.09:
@@ -241,7 +241,7 @@ def dessiner_proportions(axes, points, bloc, gabarit):
 
 
 def dessiner_reperage(axes, pays, tuiles, blocs_test, mis_en_avant, mots):
-    """Carte de repérage : les 34 blocs, apprentissage et test distingués."""
+    """Locator map: the 34 blocks, training and test told apart."""
     pays.plot(ax=axes, color="#DFE6E1", zorder=1)
     pays.boundary.plot(ax=axes, color="#93A49B", linewidth=0.8, zorder=2)
 
@@ -274,7 +274,8 @@ def dessiner_reperage(axes, pays, tuiles, blocs_test, mis_en_avant, mots):
 
 def main():
     analyseur = argparse.ArgumentParser()
-    analyseur.add_argument("--langue", choices=sorted(TEXTES), default="fr")
+    analyseur.add_argument("--langue", choices=sorted(TEXTES), default="fr",
+                           help="image language, fr or en")
     mots = TEXTES[analyseur.parse_args().langue]
     sortie = Path("portfolio") / mots["sortie"]
 
@@ -289,8 +290,8 @@ def main():
     blocs_test = sorted(points["bloc"].unique().tolist())
     meilleur, pire = 34542, 36100
 
-    # 300 points par pouce : 3 000 pixels de large, net sur un ecran haute densite
-    # ou l'image est affichee autour de 1 100 pixels logiques.
+    # 300 dots per inch: 3,000 pixels wide, sharp on a high-density screen
+    # where the image is shown at about 1,100 logical pixels.
     figure = plt.figure(figsize=(10.0, 9.0), dpi=300)
     figure.patch.set_facecolor(FOND)
 
@@ -299,8 +300,8 @@ def main():
     figure.text(0.05, 0.930, mots["chapeau"], fontsize=11.5, color=ENCRE_DOUCE,
                 va="top", linespacing=1.5)
 
-    # Rectangles carrés : l'aspect égal les remplit exactement, donc les barres de
-    # proportions dessous s'alignent sur les cartes au pixel près.
+    # Square rectangles: the equal aspect fills them exactly, so the proportion
+    # bars below line up with the maps to the pixel.
     cote = 0.375
     hauteur = cote * 10.0 / 9.0
     gauche = figure.add_axes([0.05, 0.365, cote, hauteur])
@@ -309,7 +310,7 @@ def main():
     n_g = points[points["bloc"] == meilleur]
     n_d = points[points["bloc"] == pire]
 
-    # Même largeur en degrés des deux côtés, sinon les échelles diffèrent.
+    # Same width in degrees on both sides, otherwise the scales differ.
     portee = max(
         max(g.total_bounds[2] - g.total_bounds[0], g.total_bounds[3] - g.total_bounds[1])
         for g in (n_g, n_d)
@@ -359,7 +360,7 @@ def main():
 
     sortie.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(sortie, facecolor=FOND, dpi=300)
-    print(f"{sortie} écrit")
+    print(f"{sortie} written")
 
 
 if __name__ == "__main__":

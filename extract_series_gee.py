@@ -1,19 +1,19 @@
-"""Étape 2/3 : extrait les séries Sentinel-2 et Sentinel-1 sur les points échantillonnés.
+"""Step 2/3: extracts the Sentinel-2 and Sentinel-1 time series at the sampled points.
 
-Tourne sur Google Earth Engine et exporte un CSV dans ton Google Drive.
+Runs on Google Earth Engine and exports a CSV to your Google Drive.
 
-Prérequis, une seule fois :
+Prerequisites, once:
 
     pip install earthengine-api
     earthengine authenticate
 
-Puis renseigne PROJET ci-dessous avec ton projet Cloud Earth Engine
-(https://console.cloud.google.com/earth-engine) et lance :
+Then set PROJET below to your Earth Engine Cloud project
+(https://console.cloud.google.com/earth-engine) and run:
 
     python extract_series_gee.py
 
-Le script rend la main immédiatement : l'export tourne côté Google. Compte 20 min à
-2 h selon la charge. Suis-le sur https://code.earthengine.google.com/tasks
+The script returns immediately: the export runs on Google's side. Allow 20 min to
+2 h depending on load. Track it at https://code.earthengine.google.com/tasks
 """
 
 import json
@@ -27,24 +27,24 @@ ENTREE = Path("data") / "echantillons_rdc.geojson"
 DOSSIER_DRIVE = "Classify"
 NOM_EXPORT = "series_sentinel_rdc"
 
-# La carte palmier décrit la période 2016-2021 : on prend la dernière année couverte.
+# The palm map describes 2016-2021: we take the last year covered.
 ANNEE = 2021
 
-# Bandes Sentinel-2 attendues par le notebook (visible, proche et moyen infrarouge).
+# Sentinel-2 bands expected by the notebook (visible, near and shortwave infrared).
 BANDES_S2 = ["B2", "B3", "B4", "B8", "B11", "B12"]
-# Sentinel-1 : rétrodiffusion radar. C'est elle qui porte la structure verticale de la
-# canopée, le seul signal qui sépare vraiment palmier, cacao et forêt, toutes trois
-# saturées en NDVI toute l'année.
+# Sentinel-1: radar backscatter. It carries the vertical structure of the canopy,
+# the only signal that truly separates palm, cocoa and forest, all three
+# saturated in NDVI all year round.
 BANDES_S1 = ["VV", "VH"]
 
 MOIS = list(range(1, 13))
 
 
 def masquer_nuages(image):
-    """Masque nuages, ombres et cirrus via la bande de classification SCL."""
+    """Masks clouds, shadows and cirrus using the SCL classification band."""
     scl = image.select("SCL")
-    # 3 = ombre de nuage, 8 = nuage moyennement probable, 9 = très probable,
-    # 10 = cirrus, 11 = neige.
+    # 3 = cloud shadow, 8 = cloud medium probability, 9 = high probability,
+    # 10 = cirrus, 11 = snow.
     mauvais = (
         scl.eq(3).Or(scl.eq(8)).Or(scl.eq(9)).Or(scl.eq(10)).Or(scl.eq(11))
     )
@@ -52,18 +52,18 @@ def masquer_nuages(image):
 
 
 def composite_mensuel(collection, debut, fin, secours, bandes):
-    """Médiane du mois ; là où tout est masqué, on retombe sur la médiane annuelle.
+    """Monthly median; where everything is masked, falls back to the annual median.
 
-    Sans ce filet, une saison des pluies couverte suffit à vider un mois entier, et
-    `sampleRegions` supprime alors purement et simplement le point concerné.
+    Without this safety net, one cloudy rainy season is enough to empty a whole month,
+    and `sampleRegions` then simply drops the point concerned.
 
-    Le repli se fait bande par bande : `unmask` refuse une image de remplacement à
-    plusieurs bandes, elle n'en accepte qu'une seule.
+    The fallback is applied band by band: `unmask` rejects a multi-band
+    replacement image, it only accepts a single band.
     """
     mensuelle = collection.filterDate(debut, fin)
-    # Un mois sans aucune acquisition donne une médiane sans aucune bande, sur laquelle
-    # `select` échoue. Le cas se produit vraiment : Sentinel-1 ne survole pas toute la
-    # RDC tous les mois. On bascule alors entièrement sur la médiane annuelle.
+    # A month with no acquisition at all gives a median with no bands, on which
+    # `select` fails. This really happens: Sentinel-1 does not cover the whole
+    # DRC every month. We then switch entirely to the annual median.
     mois = ee.Image(
         ee.Algorithms.If(mensuelle.size().gt(0), mensuelle.median(), secours)
     )
@@ -73,19 +73,19 @@ def composite_mensuel(collection, debut, fin, secours, bandes):
 
 
 def construire_image(zone):
-    """Empile 12 mois × (6 bandes optiques + 2 bandes radar) en une seule image."""
+    """Stacks 12 months × (6 optical bands + 2 radar bands) into a single image."""
     s2 = (
         ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
         .filterBounds(zone)
         .filterDate(f"{ANNEE}-01-01", f"{ANNEE + 1}-01-01")
         .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 80))
         .map(masquer_nuages)
-        # Réflectance en 0-1, comme dans le notebook.
+        # Reflectance in 0-1, as in the notebook.
         .select(BANDES_S2)
-        # Une opération arithmétique rend une image sans les propriétés de
-        # l'originale, date comprise. Sans cette copie, filterDate ne trouve plus
-        # rien dans composite_mensuel, et les douze mois retombent tous sur la
-        # médiane annuelle : c'est ce qui s'est produit pour 100 % des points.
+        # An arithmetic operation returns an image without the original's
+        # properties, date included. Without this copy, filterDate finds nothing
+        # in composite_mensuel, and all twelve months fall back to the
+        # annual median: this is what happened for 100% of the points.
         .map(lambda image: image.divide(10000)
              .copyProperties(image, ["system:time_start"]))
     )
@@ -123,16 +123,16 @@ def construire_image(zone):
 def main():
     if PROJET == "à-remplir":
         raise SystemExit(
-            "Renseigne PROJET avec ton projet Cloud Earth Engine.\n"
-            "Tu le trouves sur https://console.cloud.google.com/earth-engine"
+            "Set PROJET to your Earth Engine Cloud project.\n"
+            "You can find it at https://console.cloud.google.com/earth-engine"
         )
     if not ENTREE.exists():
-        raise SystemExit(f"{ENTREE} introuvable, lance d'abord sample_oil_palm.py")
+        raise SystemExit(f"{ENTREE} not found, run sample_oil_palm.py first")
 
     ee.Initialize(project=PROJET)
 
     points = ee.FeatureCollection(json.loads(ENTREE.read_text(encoding="utf-8")))
-    print(f"{points.size().getInfo()} points chargés")
+    print(f"{points.size().getInfo()} points loaded")
 
     image = construire_image(points.geometry())
     colonnes = ["classe", "bloc"] + [
@@ -143,7 +143,7 @@ def main():
         collection=points,
         properties=["classe", "bloc"],
         scale=10,
-        tileScale=4,  # découpe le calcul : évite les dépassements de mémoire
+        tileScale=4,  # splits the computation: avoids running out of memory
         geometries=False,
     )
 
@@ -158,9 +158,9 @@ def main():
     tache.start()
 
     print(
-        f"\nExport lancé : {NOM_EXPORT}.csv → Google Drive / {DOSSIER_DRIVE}\n"
-        "Suivi : https://code.earthengine.google.com/tasks\n"
-        "Une fois terminé, télécharge le CSV dans data/ et lance prepare_plots.py"
+        f"\nExport started: {NOM_EXPORT}.csv → Google Drive / {DOSSIER_DRIVE}\n"
+        "Track it at: https://code.earthengine.google.com/tasks\n"
+        "Once finished, download the CSV into data/ and run prepare_plots.py"
     )
 
 

@@ -1,10 +1,10 @@
-"""Étape 1/3 : échantillonne des points étiquetés dans les rasters palmier de la RDC.
+"""Step 1/3: samples labelled points from the DRC oil palm rasters.
 
-Produit `data/echantillons_rdc.geojson`, à téléverser dans Google Earth Engine
-pour l'étape 2 (extraction des séries Sentinel-1 / Sentinel-2).
+Produces `data/echantillons_rdc.geojson`, to upload to Google Earth Engine
+for step 2 (extraction of the Sentinel-1 / Sentinel-2 time series).
 
-Ne demande aucun compte : tout se fait en local sur les GeoTIFF déjà téléchargés
-depuis Zenodo (https://zenodo.org/records/13379129).
+Requires no account: everything runs locally on the GeoTIFFs already downloaded
+from Zenodo (https://zenodo.org/records/13379129).
 
     python sample_oil_palm.py
 """
@@ -21,26 +21,26 @@ GRILLE = DOSSIER / "palmier_grille" / "Grid_OilPalm2016-2021.shp"
 RASTERS = DOSSIER / "palmier_extent"
 SORTIE = DOSSIER / "echantillons_rdc.geojson"
 
-# Emprise RDC : lon_min, lat_min, lon_max, lat_max
+# DRC extent: lon_min, lat_min, lon_max, lat_max
 RDC = (12.2, -13.5, 31.3, 5.4)
 
-# Valeurs du raster Descals et al. 2024.
+# Values of the Descals et al. 2024 raster.
 ETIQUETTES = {0: "pas_de_palmier", 1: "palmier_industriel", 2: "palmier_villageois"}
 
-# Un pixel sur PAS dans chaque direction. À 10 m, un pas de 20 donne un point tous
-# les 200 m : deux pixels voisins d'une même plantation sont quasi identiques, les
-# garder tous les deux gonfle le jeu sans ajouter d'information.
+# One pixel out of PAS in each direction. At 10 m, a step of 20 gives one point every
+# 200 m: two neighbouring pixels of the same plantation are nearly identical, keeping
+# both inflates the dataset without adding information.
 PAS = 20
 
-# Par tuile et par classe. 34 tuiles × 3 classes × 100 ≈ 10 000 points au maximum,
-# volume qui passe confortablement dans un export Earth Engine.
+# Per tile and per class. 34 tiles × 3 classes × 100 ≈ 10,000 points at most,
+# a volume that fits comfortably in an Earth Engine export.
 POINTS_PAR_CLASSE = 100
 
 ALEA = np.random.default_rng(42)
 
 
 def echantillonner_tuile(chemin, identifiant):
-    """Retourne les points tirés dans une tuile, équilibrés entre les trois classes."""
+    """Returns the points drawn in one tile, balanced across the three classes."""
     with rasterio.open(chemin) as source:
         donnees = source.read(1)[::PAS, ::PAS]
         transformation = source.transform
@@ -54,7 +54,7 @@ def echantillonner_tuile(chemin, identifiant):
             len(lignes), size=min(POINTS_PAR_CLASSE, len(lignes)), replace=False
         )
         for index in tirage:
-            # Retour aux indices pleine résolution, puis au centre du pixel.
+            # Back to full-resolution indices, then to the pixel centre.
             longitude, latitude = transformation * (
                 colonnes[index] * PAS + 0.5,
                 lignes[index] * PAS + 0.5,
@@ -62,8 +62,8 @@ def echantillonner_tuile(chemin, identifiant):
             points.append(
                 {
                     "classe": etiquette,
-                    # La tuile de 100 km sert de bloc spatial : c'est elle qui
-                    # découpera apprentissage et test sans fuite.
+                    # The 100 km tile serves as the spatial block: it is what
+                    # will split training and test without leakage.
                     "bloc": int(identifiant),
                     "geometry": Point(longitude, latitude),
                 }
@@ -74,31 +74,31 @@ def echantillonner_tuile(chemin, identifiant):
 def main():
     if not GRILLE.exists():
         raise FileNotFoundError(
-            f"{GRILLE} introuvable, télécharge Grid_OilPalm2016-2021.zip "
-            "depuis https://zenodo.org/records/13379129 et décompresse-le dans data/."
+            f"{GRILLE} not found, download Grid_OilPalm2016-2021.zip "
+            "from https://zenodo.org/records/13379129 and unzip it into data/."
         )
 
     grille = gpd.read_file(GRILLE)
     tuiles = grille.cx[RDC[0]:RDC[2], RDC[1]:RDC[3]]
-    print(f"{len(tuiles)} tuiles sur la RDC")
+    print(f"{len(tuiles)} tiles over the DRC")
 
     points = []
     for identifiant in tuiles["ID"].astype(int):
         chemin = RASTERS / f"GlobalOilPalm_OP-extent_{identifiant}.tif"
         if not chemin.exists():
-            print(f"  tuile {identifiant} : raster absent, ignorée")
+            print(f"  tile {identifiant}: raster missing, skipped")
             continue
         tires = echantillonner_tuile(chemin, identifiant)
         points.extend(tires)
-        print(f"  tuile {identifiant} : {len(tires)} points")
+        print(f"  tile {identifiant}: {len(tires)} points")
 
     echantillons = gpd.GeoDataFrame(points, crs="EPSG:4326")
     SORTIE.parent.mkdir(parents=True, exist_ok=True)
     echantillons.to_file(SORTIE, driver="GeoJSON")
 
-    print(f"\n{len(echantillons)} points écrits dans {SORTIE}")
+    print(f"\n{len(echantillons)} points written to {SORTIE}")
     print(echantillons["classe"].value_counts().to_string())
-    print(f"\n{echantillons['bloc'].nunique()} blocs spatiaux distincts")
+    print(f"\n{echantillons['bloc'].nunique()} distinct spatial blocks")
 
 
 if __name__ == "__main__":

@@ -1,23 +1,23 @@
-"""Connecteur MCP : donne à Claude l'accès au modèle de détection du palmier à huile.
+"""MCP connector: gives Claude access to the oil palm detection model.
 
-Enregistrement dans Claude Code, une seule fois, visible de cette seule machine :
+Registration in Claude Code, once only, visible from this machine only:
 
     claude mcp add classify --scope local -- python C:/EPx/Classify/mcp_classify.py
 
-Claude peut alors répondre à « y a-t-il du palmier en 0,913, 24,466 ? » en appelant
-l'outil check_oil_palm. Le calcul est celui de check_site.py, importé et non
-recopié : le script, l'interface et Claude donnent toujours la même réponse.
+Claude can then answer "is there oil palm at 0.913, 24.466?" by calling
+the check_oil_palm tool. The computation is that of check_site.py, imported rather
+than copied: the script, the interface and Claude always give the same answer.
 
-Le serveur échange avec Claude sur l'entrée et la sortie standard. Il ne doit donc
-rien écrire d'autre sur la sortie standard : un simple print casserait le protocole.
+The server talks to Claude over standard input and output. It must therefore
+write nothing else to standard output: a single print would break the protocol.
 """
 import os
 from functools import lru_cache
 from pathlib import Path
 
-# Les chemins data/ du projet sont relatifs : on se place à la racine du projet, quel
-# que soit le dossier depuis lequel Claude Code lance le serveur. Avant les imports du
-# projet, qui résolvent ces chemins.
+# The project's data/ paths are relative: move to the project root, whatever
+# folder Claude Code starts the server from. Before the project imports,
+# which resolve these paths.
 os.chdir(Path(__file__).resolve().parent)
 
 import ee  # noqa: E402
@@ -43,10 +43,10 @@ serveur = MCPServer(
 
 @lru_cache(maxsize=1)
 def initialiser():
-    """Connexion Earth Engine et chargement du modèle, au premier appel seulement.
+    """Earth Engine connection and model loading, on the first call only.
 
-    Pas au démarrage : Claude Code attend que le serveur réponde vite, et la connexion à
-    Earth Engine prend quelques secondes.
+    Not at startup: Claude Code expects the server to respond quickly, and connecting to
+    Earth Engine takes a few seconds.
     """
     ee.Initialize(project=PROJET)
     return charger_modele()
@@ -69,8 +69,8 @@ def check_oil_palm(latitude: float, longitude: float) -> dict:
         longitude: Decimal degrees, between -180 and 180.
     """
     if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
-        # ToolError et non ValueError : mcp 2.x ne transmet à Claude que le message des
-        # erreurs prévues, les autres arrivent comme un plantage anonyme.
+        # ToolError and not ValueError: mcp 2.x only passes Claude the message of
+        # expected errors, the others arrive as an anonymous crash.
         raise ToolError("Latitude must be between -90 and 90, longitude between -180 and 180.")
 
     charge = initialiser()

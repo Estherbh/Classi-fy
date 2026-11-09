@@ -207,7 +207,7 @@ async function lancer() {
     return;
   }
   placer(lat, lon);
-  // Des coordonnées tapées à la main doivent aussi amener la carte sur le lieu.
+  // Coordinates typed by hand must also bring the map to the place.
   carte.setView([lat, lon], Math.max(carte.getZoom(), 13));
   occupe = true;
   $("lancer").disabled = true;
@@ -222,10 +222,10 @@ async function lancer() {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lat, lon }),
     });
     const donnees = await reponse.json();
-    // FastAPI renvoie un texte pour nos erreurs, une liste pour les erreurs de validation.
+    // FastAPI returns a string for our errors, a list for validation errors.
     if (!reponse.ok) throw new Error(typeof donnees.detail === "string" ? donnees.detail : "The check failed.");
-    // Retirer le bloc d'attente avant d'afficher : il est au-dessus du résultat, et sa
-    // disparition après coup décalerait le défilement calculé dans afficher().
+    // Remove the waiting block before displaying: it sits above the result, and its
+    // later removal would shift the scroll computed in afficher().
     clearInterval(chrono);
     $("attente").classList.remove("visible");
     afficher(donnees);
@@ -257,7 +257,7 @@ function afficher(d) {
   }
 
   if (d.vignette) {
-    // Earth Engine dessine la vignette à la demande : quelques secondes après la réponse.
+    // Earth Engine draws the thumbnail on demand: a few seconds after the answer.
     const image = $("vignette");
     image.classList.add("charge");
     $("legende-img").textContent = "Loading the Sentinel-2 image...";
@@ -273,7 +273,7 @@ function afficher(d) {
   $("meta").innerHTML = `Model: macro F1 ${modele.f1.toFixed(3)} ± ${modele.ecart_type.toFixed(3)} on unseen regions<br>`
     + `Point ${d.lat.toFixed(5)}, ${d.lon.toFixed(5)} · computed in ${d.duree} s`;
   $("resultat").classList.add("visible");
-  // Le panneau défile seul : on y amène le haut du résultat, chiffre compris.
+  // The panel scrolls on its own: bring the top of the result into view, number included.
   const panneau = document.querySelector("aside");
   const ecart = $("resultat").getBoundingClientRect().top - panneau.getBoundingClientRect().top;
   panneau.scrollBy({ top: ecart - 16, behavior: "smooth" });

@@ -1,15 +1,15 @@
-"""Démo : dit si un point donné porte du palmier.
+"""Demo: tells whether a given point holds oil palm.
 
     python check_site.py --lat 0.91624 --lon 24.46476
     python check_site.py --lat 0.91624 --lon 24.46476 --langue en
 
-Charge le modèle produit par binary_model.py, va chercher sur Earth Engine les douze
-mois de Sentinel-1 et Sentinel-2 du seul pixel qui contient ce point, construit les
-mêmes 34 variables que l'entraînement, et affiche la probabilité de palmier.
+Loads the model produced by binary_model.py, fetches from Earth Engine the twelve
+months of Sentinel-1 and Sentinel-2 for the single pixel containing this point, builds
+the same 34 features as in training, and prints the palm probability.
 
-Prérequis identiques à extract_series_gee.py : un compte Earth Engine authentifié et
-`data/modele_palmier.joblib` déjà écrit. Compter une trentaine de secondes, tout le
-calcul se fait côté Google.
+Same prerequisites as extract_series_gee.py: an authenticated Earth Engine account and
+`data/modele_palmier.joblib` already written. Allow about thirty seconds, all the
+computation happens on Google's side.
 """
 
 import argparse
@@ -28,8 +28,8 @@ FICHIER_MODELE = Path("data") / "modele_palmier.joblib"
 
 COLONNES = [f"{bande}_{mois:02d}" for mois in MOIS for bande in BANDES_S2 + BANDES_S1]
 
-# Emprise des 34 blocs d'entraînement. En dehors, le modèle répond quand même mais sa
-# performance n'a jamais été mesurée : c'est la première des limites connues du README.
+# Extent of the 34 training blocks. Outside it, the model still answers but its
+# performance has never been measured: this is the first known limitation in the README.
 DOMAINE = {"lon_min": 12.1, "lon_max": 30.1, "lat_min": -4.9, "lat_max": 4.0}
 
 TEXTES = {
@@ -85,7 +85,7 @@ TEXTES = {
 
 
 def hors_domaine(lat, lon):
-    """Dit si le point sort de l'emprise sur laquelle le modèle a été validé."""
+    """Tells whether the point lies outside the extent on which the model was validated."""
     return not (
         DOMAINE["lon_min"] <= lon <= DOMAINE["lon_max"]
         and DOMAINE["lat_min"] <= lat <= DOMAINE["lat_max"]
@@ -93,20 +93,20 @@ def hors_domaine(lat, lon):
 
 
 class MesureImpossible(Exception):
-    """Le pixel visé n'a de valeur pour au moins une bande sur aucun mois."""
+    """The target pixel has no value for at least one band in any month."""
 
 
 @lru_cache(maxsize=1)
 def charger_modele():
-    """Modèle et métadonnées sauvegardés par binary_model.py, lus une seule fois."""
+    """Model and metadata saved by binary_model.py, read only once."""
     return joblib.load(FICHIER_MODELE)
 
 
 def mesurer(lat, lon, mots):
-    """Renvoie les 96 mesures mensuelles du pixel qui contient ce point.
+    """Returns the 96 monthly measurements of the pixel containing this point.
 
-    `reduceRegion` avec le réducteur `first` à 10 m prend exactement le pixel visé,
-    comme le faisait `sampleRegions` sur les 8 658 points d'entraînement.
+    `reduceRegion` with the `first` reducer at 10 m takes exactly the target pixel,
+    as `sampleRegions` did on the 8,658 training points.
     """
     point = ee.Geometry.Point([lon, lat])
     mesures = construire_image(point).reduceRegion(
@@ -122,11 +122,11 @@ def mesurer(lat, lon, mots):
 
 
 def probabilite_palmier(lat, lon, mots=TEXTES["en"]):
-    """Probabilité de palmier sur un point, sans rien afficher.
+    """Palm probability at a point, without printing anything.
 
-    Partagée par ce script, l'interface de démonstration et le connecteur Claude,
-    pour que les trois donnent exactement la même réponse. Earth Engine doit déjà
-    être initialisé.
+    Shared by this script, the demo interface and the Claude connector, so that
+    all three give exactly the same answer. Earth Engine must already be
+    initialised.
     """
     charge = charger_modele()
     modele = charge["modele"]
@@ -139,16 +139,17 @@ def probabilite_palmier(lat, lon, mots=TEXTES["en"]):
 
 def main():
     analyseur = argparse.ArgumentParser(
-        description="Probabilité de palmier sur un point donné."
+        description="Oil palm probability at a given point."
     )
-    analyseur.add_argument("--lat", type=float, required=True, help="latitude en degrés")
-    analyseur.add_argument("--lon", type=float, required=True, help="longitude en degrés")
+    analyseur.add_argument("--lat", type=float, required=True, help="latitude in degrees")
+    analyseur.add_argument("--lon", type=float, required=True, help="longitude in degrees")
     analyseur.add_argument(
         "--seuil", type=float, default=0.5,
-        help="probabilité à partir de laquelle on répond palmier (défaut 0.5)",
+        help="probability from which the answer is palm (default 0.5)",
     )
-    analyseur.add_argument("--langue", choices=sorted(TEXTES), default="fr")
-    analyseur.add_argument("--projet", default=PROJET, help="projet Cloud Earth Engine")
+    analyseur.add_argument("--langue", choices=sorted(TEXTES), default="fr",
+                           help="output language, fr or en")
+    analyseur.add_argument("--projet", default=PROJET, help="Earth Engine Cloud project")
     arguments = analyseur.parse_args()
     mots = TEXTES[arguments.langue]
 
