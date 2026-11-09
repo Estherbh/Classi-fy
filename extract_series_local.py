@@ -1,11 +1,11 @@
 """Étape 2 (variante sans compte) : extrait les séries Sentinel-2 depuis AWS Open Data.
 
-Alternative à extraire_series_gee.py : ne demande **aucun compte**, ni Google Earth
+Alternative à extract_series_gee.py : ne demande **aucun compte**, ni Google Earth
 Engine, ni Copernicus. Les images Sentinel-2 L2A sont publiées en accès anonyme sur
 AWS (bucket sentinel-cogs), interrogeables via l'API STAC d'Element 84.
 
-    python extraire_series_local.py
-    python extraire_series_local.py --fenetres 3   # essai rapide sur 3 zones
+    python extract_series_local.py
+    python extract_series_local.py --fenetres 3   # essai rapide sur 3 zones
 
 Produit directement `data/parcelles.parquet`, le format attendu par le notebook.
 
@@ -270,7 +270,7 @@ def main():
     if not GRILLE.exists():
         raise SystemExit(
             f"{GRILLE} introuvable, télécharge et décompresse les fichiers Zenodo "
-            "dans data/ (voir echantillonner_palmier.py)."
+            "dans data/ (voir sample_oil_palm.py)."
         )
 
     import geopandas as gpd
@@ -325,7 +325,7 @@ def main():
 
     print(f"\n{SORTIE} écrit : {len(donnees)} parcelles, {donnees['bloc'].nunique()} blocs")
     print(donnees["classe"].value_counts().to_string())
-    print("\nRelance maintenant classification_cultures.ipynb : il basculera seul.")
+    print("\nRelance maintenant crop_classification.ipynb : il basculera seul.")
 
 
 if __name__ == "__main__":

@@ -1,11 +1,11 @@
 """Interface locale de démonstration : une carte, un clic, la probabilité de palmier.
 
-    python interface_demo.py
+    python demo_interface.py
 
 Ouvre http://127.0.0.1:8000 dans le navigateur. Le serveur n'écoute que sur cette
 machine : aucun autre appareil ne peut s'y connecter, même sur le même réseau.
 
-Le calcul est celui de verifier_site.py, importé et non recopié : l'interface, le
+Le calcul est celui de check_site.py, importé et non recopié : l'interface, le
 script et le connecteur Claude donnent donc toujours la même réponse. Compter 20 à
 30 secondes par point, le temps qu'Earth Engine assemble les douze mois d'images.
 """
@@ -24,8 +24,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from extraire_series_gee import ANNEE, PROJET, masquer_nuages
-from verifier_site import (DOMAINE, MesureImpossible, charger_modele, hors_domaine,
+from extract_series_gee import ANNEE, PROJET, masquer_nuages
+from check_site import (DOMAINE, MesureImpossible, charger_modele, hors_domaine,
                            probabilite_palmier)
 
 # 127.0.0.1 et non 0.0.0.0 : c'est ce qui rend l'interface privée.

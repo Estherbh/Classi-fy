@@ -8,7 +8,7 @@ echo   Demarrage de la demo Classi-fy...
 echo   Le navigateur va s'ouvrir tout seul.
 echo   Pour arreter la demo : fermez simplement cette fenetre.
 echo.
-"C:\Program Files\Python314\python.exe" interface_demo.py
+"C:\Program Files\Python314\python.exe" demo_interface.py
 echo.
 echo   La demo s'est arretee.
 pause

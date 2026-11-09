@@ -126,10 +126,10 @@ Chaque point porte donc **96 mesures**, soit 12 mois × 8 bandes.
 ### La chaîne, en quatre étapes indépendantes
 
 ```
-echantillonner_palmier.py    rasters Zenodo        -> data/echantillons_rdc.geojson
-extraire_series_gee.py       Sentinel-1 et -2      -> CSV dans Google Drive
-preparer_parcelles.py        CSV                   -> data/parcelles.parquet
-modele_binaire.py            parquet               -> data/modele_palmier.joblib
+sample_oil_palm.py           rasters Zenodo        -> data/echantillons_rdc.geojson
+extract_series_gee.py        Sentinel-1 et -2      -> CSV dans Google Drive
+prepare_plots.py             CSV                   -> data/parcelles.parquet
+binary_model.py              parquet               -> data/modele_palmier.joblib
 ```
 
 Chaque étape est lançable seule et reprend là où la précédente s'est arrêtée.
@@ -279,7 +279,7 @@ Le modèle utilise des médianes mensuelles. Sentinel-1 repasse tous les six à 
 
 Avant cette date, les douze composites mensuels Sentinel-2 étaient identiques pour 100 % des points : chaque point portait une seule valeur optique, recopiée douze fois. Le radar n'était pas touché.
 
-La cause tenait à une ligne d'`extraire_series_gee.py`. La division des réflectances par 10 000 rendait des images privées de leur propriété `system:time_start`. Le filtre mensuel ne trouvait alors aucune image, et le repli sur la médiane annuelle s'appliquait aux douze mois, sans aucune erreur levée. La correction recopie la date après la division. L'amplitude saisonnière de 0,04 contre 0,03 annoncée auparavant était un artefact de ce défaut : elle valait en réalité 0,000 pour les deux classes.
+La cause tenait à une ligne d'`extract_series_gee.py`. La division des réflectances par 10 000 rendait des images privées de leur propriété `system:time_start`. Le filtre mensuel ne trouvait alors aucune image, et le repli sur la médiane annuelle s'appliquait aux douze mois, sans aucune erreur levée. La correction recopie la date après la division. L'amplitude saisonnière de 0,04 contre 0,03 annoncée auparavant était un artefact de ce défaut : elle valait en réalité 0,000 pour les deux classes.
 
 Effet mesuré : le F1 spatial passe de 0,817 à 0,821, un écart inférieur à l'écart type entre plis. En trois classes il recule de 0,561 à 0,542. Rendre le temps à l'optique n'améliore donc pas nettement le modèle, dont la séparation repose sur le radar comme avant. Tous les chiffres, cartes et courbes de ce document ont été recalculés sur les données corrigées. Les données, prédictions et le modèle d'avant la correction sont conservés dans `data/` avec le suffixe `_avant_correctif`.
 
@@ -300,7 +300,7 @@ La couche Descals est le produit d'un modèle, avec ses propres erreurs. Elles s
 Tout est calé sur 2021. Le comportement du modèle sur d'autres années n'a pas été mesuré.
 
 **5. La variante sans compte est nettement inférieure.**
-`extraire_series_local.py` évite toute inscription en lisant Sentinel-2 sur le bucket AWS ouvert, mais le bucket Sentinel-1 est payant. Sans radar, le résultat plafonne à 0,405. Une tuile, la 33506, s'est même révélée inexploitable en optique seule, couverte de nuages les douze mois de l'année. Le radar, qui traverse les nuages, a résolu ce cas.
+`extract_series_local.py` évite toute inscription en lisant Sentinel-2 sur le bucket AWS ouvert, mais le bucket Sentinel-1 est payant. Sans radar, le résultat plafonne à 0,405. Une tuile, la 33506, s'est même révélée inexploitable en optique seule, couverte de nuages les douze mois de l'année. Le radar, qui traverse les nuages, a résolu ce cas.
 
 ---
 
@@ -334,7 +334,7 @@ pip install earthengine-api scikit-learn pandas numpy geopandas rasterio pyarrow
 earthengine authenticate
 ```
 
-Un compte Google Earth Engine est nécessaire, gratuit pour un usage non commercial. Renseigner ensuite l'identifiant du projet Cloud dans `extraire_series_gee.py`.
+Un compte Google Earth Engine est nécessaire, gratuit pour un usage non commercial. Renseigner ensuite l'identifiant du projet Cloud dans `extract_series_gee.py`.
 
 ### Étape 1, les points étiquetés
 
@@ -344,7 +344,7 @@ Télécharger depuis [Zenodo 10.5281/zenodo.13379129](https://zenodo.org/records
 - les rasters d'extension vers `data/palmier_extent/`
 
 ```bash
-python echantillonner_palmier.py
+python sample_oil_palm.py
 ```
 
 Produit `data/echantillons_rdc.geojson`, 8 658 points sur 34 blocs.
@@ -352,7 +352,7 @@ Produit `data/echantillons_rdc.geojson`, 8 658 points sur 34 blocs.
 ### Étape 2, les séries temporelles
 
 ```bash
-python extraire_series_gee.py
+python extract_series_gee.py
 ```
 
 L'export tourne côté Google et rend la main immédiatement. Compter une dizaine de minutes. Le CSV arrive dans Google Drive, dossier `Classify`. Le suivre sur [code.earthengine.google.com/tasks](https://code.earthengine.google.com/tasks).
@@ -362,13 +362,13 @@ L'export tourne côté Google et rend la main immédiatement. Compter une dizain
 Télécharger le CSV dans `data/`, puis :
 
 ```bash
-python preparer_parcelles.py data/series_sentinel_rdc.csv
+python prepare_plots.py data/series_sentinel_rdc.csv
 ```
 
 ### Étape 4, le modèle
 
 ```bash
-python modele_binaire.py
+python binary_model.py
 ```
 
 Affiche l'évaluation complète et écrit `data/modele_palmier.joblib`.
@@ -376,7 +376,7 @@ Affiche l'évaluation complète et écrit `data/modele_palmier.joblib`.
 ### Variante sans aucun compte
 
 ```bash
-python extraire_series_local.py
+python extract_series_local.py
 ```
 
 Remplace les étapes 2 et 3 en lisant Sentinel-2 sur AWS Open Data. Compter une heure. Ne fournit pas le radar, donc plafonne à 0,405. Utile pour valider la chaîne, pas pour produire un résultat.
@@ -387,16 +387,16 @@ Remplace les étapes 2 et 3 en lisant Sentinel-2 sur AWS Open Data. Compter une 
 
 | Fichier | Rôle |
 |---|---|
-| `echantillonner_palmier.py` | étape 1, tirage des points étiquetés dans les rasters Zenodo |
-| `extraire_series_gee.py` | étape 2, extraction Sentinel-1 et Sentinel-2 via Earth Engine |
-| `extraire_series_local.py` | étape 2, variante sans compte, Sentinel-2 seul depuis AWS |
-| `preparer_parcelles.py` | étape 3, conversion du CSV Earth Engine au format parquet |
-| `modele_binaire.py` | étape 4, modèle final palmier contre pas de palmier |
-| `predictions_carte.py` | prédictions géolocalisées du pli de test, pour la carte |
-| `verifier_site.py` | démonstration, probabilité de palmier sur des coordonnées données |
-| `carte_resultats.py` | carte des quatre cas de la matrice de confusion, PNG, `--langue en` pour l'anglais |
-| `classification_cultures.ipynb` | notebook d'analyse, comparaison des découpages et évaluation à 3 classes |
-| `organiser_fermiers_py.ipynb` | organisation des listes de fermiers, hors chaîne de classification |
+| `sample_oil_palm.py` | étape 1, tirage des points étiquetés dans les rasters Zenodo |
+| `extract_series_gee.py` | étape 2, extraction Sentinel-1 et Sentinel-2 via Earth Engine |
+| `extract_series_local.py` | étape 2, variante sans compte, Sentinel-2 seul depuis AWS |
+| `prepare_plots.py` | étape 3, conversion du CSV Earth Engine au format parquet |
+| `binary_model.py` | étape 4, modèle final palmier contre pas de palmier |
+| `map_predictions.py` | prédictions géolocalisées du pli de test, pour la carte |
+| `check_site.py` | démonstration, probabilité de palmier sur des coordonnées données |
+| `results_map.py` | carte des quatre cas de la matrice de confusion, PNG, `--langue en` pour l'anglais |
+| `crop_classification.ipynb` | notebook d'analyse, comparaison des découpages et évaluation à 3 classes |
+| `organize_farmers.ipynb` | organisation des listes de fermiers, hors chaîne de classification |
 
 Le dossier `data/` est exclu du dépôt. Il contient les rasters, les séries extraites et des données personnelles de fermiers, qui ne doivent jamais être publiées.
 

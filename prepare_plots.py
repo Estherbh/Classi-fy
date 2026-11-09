@@ -1,8 +1,8 @@
 """Étape 3/3 : convertit le CSV exporté par Earth Engine au format du notebook.
 
-    python preparer_parcelles.py data/series_sentinel_rdc.csv
+    python prepare_plots.py data/series_sentinel_rdc.csv
 
-Produit `data/parcelles.parquet`. Le notebook classification_cultures.ipynb bascule
+Produit `data/parcelles.parquet`. Le notebook crop_classification.ipynb bascule
 alors tout seul sur les vraies données à sa prochaine exécution.
 """
 

@@ -10,7 +10,7 @@ Prérequis, une seule fois :
 Puis renseigne PROJET ci-dessous avec ton projet Cloud Earth Engine
 (https://console.cloud.google.com/earth-engine) et lance :
 
-    python extraire_series_gee.py
+    python extract_series_gee.py
 
 Le script rend la main immédiatement : l'export tourne côté Google. Compte 20 min à
 2 h selon la charge. Suis-le sur https://code.earthengine.google.com/tasks
@@ -127,7 +127,7 @@ def main():
             "Tu le trouves sur https://console.cloud.google.com/earth-engine"
         )
     if not ENTREE.exists():
-        raise SystemExit(f"{ENTREE} introuvable, lance d'abord echantillonner_palmier.py")
+        raise SystemExit(f"{ENTREE} introuvable, lance d'abord sample_oil_palm.py")
 
     ee.Initialize(project=PROJET)
 
@@ -160,7 +160,7 @@ def main():
     print(
         f"\nExport lancé : {NOM_EXPORT}.csv → Google Drive / {DOSSIER_DRIVE}\n"
         "Suivi : https://code.earthengine.google.com/tasks\n"
-        "Une fois terminé, télécharge le CSV dans data/ et lance preparer_parcelles.py"
+        "Une fois terminé, télécharge le CSV dans data/ et lance prepare_plots.py"
     )
 
 

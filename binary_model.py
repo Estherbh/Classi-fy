@@ -1,11 +1,11 @@
 """Étape 4/4 : entraîne et évalue le modèle final, palmier contre pas de palmier.
 
-    python modele_binaire.py
+    python binary_model.py
 
-Lit `data/parcelles.parquet` produit par preparer_parcelles.py et écrit
+Lit `data/parcelles.parquet` produit par prepare_plots.py et écrit
 `data/modele_palmier.joblib`.
 
-Pourquoi deux classes et non trois. Le notebook classification_cultures.ipynb évalue
+Pourquoi deux classes et non trois. Le notebook crop_classification.ipynb évalue
 les trois classes de Descals et plafonne à 0,561 de F1 macro : palmier industriel et
 palmier villageois se confondent l'un avec l'autre dans un tiers des cas, parce que ce
 qui les distingue est la géométrie des plantations et non le signal par pixel. Fusionner
@@ -73,7 +73,7 @@ def construire_variables(df):
         raise SystemExit(
             f"Bandes absentes de {FICHIER_PARCELLES} : {manquantes}.\n"
             "Le modèle final exige le radar Sentinel-1 : refais l'extraction avec "
-            "extraire_series_gee.py, la variante locale ne fournit que l'optique."
+            "extract_series_gee.py, la variante locale ne fournit que l'optique."
         )
 
     for bande in BANDES:
@@ -106,7 +106,7 @@ def plancher(y):
 def main():
     if not FICHIER_PARCELLES.exists():
         raise SystemExit(
-            f"{FICHIER_PARCELLES} introuvable, lance d'abord preparer_parcelles.py"
+            f"{FICHIER_PARCELLES} introuvable, lance d'abord prepare_plots.py"
         )
 
     parcelles = pd.read_parquet(FICHIER_PARCELLES)

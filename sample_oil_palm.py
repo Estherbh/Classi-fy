@@ -6,7 +6,7 @@ pour l'étape 2 (extraction des séries Sentinel-1 / Sentinel-2).
 Ne demande aucun compte : tout se fait en local sur les GeoTIFF déjà téléchargés
 depuis Zenodo (https://zenodo.org/records/13379129).
 
-    python echantillonner_palmier.py
+    python sample_oil_palm.py
 """
 
 from pathlib import Path

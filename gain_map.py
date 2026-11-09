@@ -1,9 +1,9 @@
 """Produit la courbe de gain de mission destinée aux réseaux sociaux.
 
-    python carte_gain.py                 version française
-    python carte_gain.py --langue en     version anglaise
+    python gain_map.py                 version française
+    python gain_map.py --langue en     version anglaise
 
-Écrit `portfolio/gain-mission.png`, ou `gain-mission-en.png` en anglais.
+Écrit `portfolio/field-gain-fr.png`, ou `field-gain.png` en anglais.
 
 La question posée est celle d'un chef de mission, pas celle d'un modélisateur : si on
 visite les parcelles dans l'ordre du modèle, combien de palmeraies trouve-t-on après
@@ -16,7 +16,7 @@ montre que la médiane à 0,90 recouvre trois blocs sous 0,70 : le gain n'est pa
 même partout, et c'est cette dispersion que la suite du projet doit réduire.
 
 Les probabilités viennent de `data/predictions_hors_pli.geojson`, produit par
-carte_priorite.py : chaque parcelle est prédite par un modèle qui n'a jamais vu son
+priority_map.py : chaque parcelle est prédite par un modèle qui n'a jamais vu son
 bloc.
 """
 
@@ -29,8 +29,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from carte_priorite import HORS_PLI, nombre, predictions_hors_pli
-from carte_resultats import ENCRE, ENCRE_DOUCE, ENCRE_PALE, FOND, TRAIT
+from priority_map import HORS_PLI, nombre, predictions_hors_pli
+from results_map import ENCRE, ENCRE_DOUCE, ENCRE_PALE, FOND, TRAIT
 
 MODELE = "#0AA5AE"
 FAIBLE = "#B91C1C"
@@ -46,7 +46,7 @@ RAPPEL_BAS = 0.70
 
 TEXTES = {
     "fr": {
-        "sortie": "gain-mission.png",
+        "sortie": "field-gain-fr.png",
         "titre": "La moitié des palmeraies en un tiers des visites",
         "chapeau": (
             "Les parcelles sont classées par la probabilité rendue par le modèle, puis "
@@ -84,7 +84,7 @@ TEXTES = {
         "milliers": " ",
     },
     "en": {
-        "sortie": "gain-mission-en.png",
+        "sortie": "field-gain.png",
         "titre": "Half the palm plots in a third of the visits",
         "chapeau": (
             "Plots are ranked by the probability the model returns, then visited from "

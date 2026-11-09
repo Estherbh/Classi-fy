@@ -1,11 +1,11 @@
 """Produit la carte de priorité de vérification destinée aux réseaux sociaux.
 
-    python carte_priorite.py                 version française
-    python carte_priorite.py --langue en     version anglaise
+    python priority_map.py                 version française
+    python priority_map.py --langue en     version anglaise
 
-Écrit `portfolio/carte-priorite.png`, ou `carte-priorite-en.png` en anglais.
+Écrit `portfolio/priority-map-fr.png`, ou `priority-map.png` en anglais.
 
-Cette image répond à une autre question que carte_resultats.py. Celle-là montrait si
+Cette image répond à une autre question que results_map.py. Celle-là montrait si
 le modèle a eu raison ; celle-ci montre à quoi sert sa probabilité quand il faut
 décider où aller sur le terrain. Deux panneaux : une maquette de carte de mission sur
 un bloc, et la part de palmier réellement présent dans chaque tranche de probabilité.
@@ -32,7 +32,7 @@ import pandas as pd
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 
-from carte_resultats import (ENCRE, ENCRE_DOUCE, ENCRE_PALE, FOND, TERRE, TRAIT,
+from results_map import (ENCRE, ENCRE_DOUCE, ENCRE_PALE, FOND, TERRE, TRAIT,
                              contours_pays)
 
 DOSSIER = Path("data")
@@ -63,7 +63,7 @@ TRANCHES = [(0.8, 1.001), (0.6, 0.8), (0.4, 0.6), (0.2, 0.4), (0.0, 0.2)]
 
 TEXTES = {
     "fr": {
-        "sortie": "carte-priorite.png",
+        "sortie": "priority-map-fr.png",
         "titre": "Où regarder en premier",
         "chapeau": (
             "Le modèle rend une probabilité, pas un verdict. Trier les parcelles par "
@@ -106,7 +106,7 @@ TEXTES = {
         "milliers": " ",
     },
     "en": {
-        "sortie": "carte-priorite-en.png",
+        "sortie": "priority-map.png",
         "titre": "Where to look first",
         "chapeau": (
             "The model returns a probability, not a verdict. Sorting plots by that "
@@ -151,7 +151,7 @@ TEXTES = {
 def predictions_hors_pli():
     """Probabilité de chaque parcelle, prédite par un modèle qui ignore son bloc.
 
-    carte_resultats.py travaille sur un seul pli, soit 1 790 parcelles : assez pour
+    results_map.py travaille sur un seul pli, soit 1 790 parcelles : assez pour
     comparer deux blocs, trop peu pour remplir cinq tranches de probabilité. Ici les
     cinq plis sont parcourus et chaque parcelle reçoit la probabilité du modèle
     entraîné sans elle, ce qui couvre les 8 658 parcelles et les 34 blocs.
@@ -161,8 +161,8 @@ def predictions_hors_pli():
 
     from sklearn.model_selection import GroupKFold
 
-    from modele_binaire import construire_variables
-    from predictions_carte import charger, modele_retenu
+    from binary_model import construire_variables
+    from map_predictions import charger, modele_retenu
 
     parcelles = charger()
     X = construire_variables(parcelles)

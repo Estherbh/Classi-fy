@@ -1,6 +1,6 @@
 """Produit le fichier de prédictions géolocalisées qui alimente la carte.
 
-    python predictions_carte.py
+    python map_predictions.py
 
 Écrit `data/predictions_test.geojson` : un point par parcelle du pli de test, avec sa
 classe réelle, la prédiction du modèle, la probabilité et la catégorie de la matrice de
@@ -23,7 +23,7 @@ import pandas as pd
 from sklearn.base import clone
 from sklearn.model_selection import GroupKFold
 
-from modele_binaire import construire_variables
+from binary_model import construire_variables
 
 DOSSIER = Path("data")
 FICHIER_PARCELLES = DOSSIER / "parcelles.parquet"
@@ -40,9 +40,9 @@ CATEGORIES = {
 
 
 def modele_retenu():
-    """Copie vierge du modèle retenu par modele_binaire.py, mêmes réglages."""
+    """Copie vierge du modèle retenu par binary_model.py, mêmes réglages."""
     if not FICHIER_MODELE.exists():
-        raise SystemExit(f"{FICHIER_MODELE} introuvable, lance d'abord modele_binaire.py")
+        raise SystemExit(f"{FICHIER_MODELE} introuvable, lance d'abord binary_model.py")
     return clone(joblib.load(FICHIER_MODELE)["modele"])
 
 
@@ -83,7 +83,7 @@ def main():
     # Même découpage et même modèle que l'évaluation, pour que la carte montre
     # exactement les parcelles et les réponses sur lesquelles les chiffres publiés ont
     # été mesurés. Le modèle est relu dans le fichier sauvegardé plutôt qu'écrit en
-    # dur : modele_binaire.py choisit l'algorithme à chaque exécution, et la carte
+    # dur : binary_model.py choisit l'algorithme à chaque exécution, et la carte
     # doit suivre ce choix.
     app, test = next(GroupKFold(5).split(X, y, groups=blocs))
     modele = modele_retenu()

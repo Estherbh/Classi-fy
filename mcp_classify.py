@@ -5,7 +5,7 @@ Enregistrement dans Claude Code, une seule fois, visible de cette seule machine 
     claude mcp add classify --scope local -- python C:/EPx/Classify/mcp_classify.py
 
 Claude peut alors répondre à « y a-t-il du palmier en 0,913, 24,466 ? » en appelant
-l'outil check_oil_palm. Le calcul est celui de verifier_site.py, importé et non
+l'outil check_oil_palm. Le calcul est celui de check_site.py, importé et non
 recopié : le script, l'interface et Claude donnent toujours la même réponse.
 
 Le serveur échange avec Claude sur l'entrée et la sortie standard. Il ne doit donc
@@ -24,8 +24,8 @@ import ee  # noqa: E402
 from mcp.server.mcpserver import MCPServer  # noqa: E402
 from mcp.server.mcpserver.exceptions import ToolError  # noqa: E402
 
-from extraire_series_gee import PROJET  # noqa: E402
-from verifier_site import (DOMAINE, MesureImpossible, charger_modele,  # noqa: E402
+from extract_series_gee import PROJET  # noqa: E402
+from check_site import (DOMAINE, MesureImpossible, charger_modele,  # noqa: E402
                            hors_domaine, probabilite_palmier)
 
 SEUIL = 0.5

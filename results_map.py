@@ -1,10 +1,10 @@
 """Produit la carte des résultats destinée au portfolio et aux réseaux sociaux.
 
-    python carte_resultats.py                 version française
-    python carte_resultats.py --langue en     version anglaise
+    python results_map.py                 version française
+    python results_map.py --langue en     version anglaise
 
-Lit `data/predictions_test.geojson` et écrit `portfolio/carte-blocs-test.png`, ou
-`carte-blocs-test-en.png` en anglais.
+Lit `data/predictions_test.geojson` et écrit `portfolio/test-blocks-map-fr.png`, ou
+`test-blocks-map.png` en anglais.
 
 La carte montre deux blocs de test côte à côte, le meilleur et le pire, pour rendre
 visible ce que l'écart type de 0,015 entre plis signifie sur le terrain. Les quatre
@@ -54,7 +54,7 @@ TRAIT = "#C3CDC6"
 
 TEXTES = {
     "fr": {
-        "sortie": "carte-blocs-test.png",
+        "sortie": "test-blocks-map-fr.png",
         "titre": "Le même modèle, deux régions",
         "chapeau": (
             "Prédictions de palmier à huile sur deux blocs de 100 km tenus à l'écart de "
@@ -91,7 +91,7 @@ TEXTES = {
         "pourcent": "{v:.0f} %",
     },
     "en": {
-        "sortie": "carte-blocs-test-en.png",
+        "sortie": "test-blocks-map.png",
         "titre": "One model, two regions",
         "chapeau": (
             "Oil palm predictions on two 100 km blocks held out of training, the best and "
@@ -145,7 +145,7 @@ def contours_pays():
         return gpd.read_file(CONTOURS)
 
     import ee
-    from extraire_series_gee import PROJET
+    from extract_series_gee import PROJET
 
     ee.Initialize(project=PROJET)
     frontieres = (

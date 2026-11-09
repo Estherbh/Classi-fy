@@ -1,13 +1,13 @@
 """Démo : dit si un point donné porte du palmier.
 
-    python verifier_site.py --lat 0.91624 --lon 24.46476
-    python verifier_site.py --lat 0.91624 --lon 24.46476 --langue en
+    python check_site.py --lat 0.91624 --lon 24.46476
+    python check_site.py --lat 0.91624 --lon 24.46476 --langue en
 
-Charge le modèle produit par modele_binaire.py, va chercher sur Earth Engine les douze
+Charge le modèle produit par binary_model.py, va chercher sur Earth Engine les douze
 mois de Sentinel-1 et Sentinel-2 du seul pixel qui contient ce point, construit les
 mêmes 34 variables que l'entraînement, et affiche la probabilité de palmier.
 
-Prérequis identiques à extraire_series_gee.py : un compte Earth Engine authentifié et
+Prérequis identiques à extract_series_gee.py : un compte Earth Engine authentifié et
 `data/modele_palmier.joblib` déjà écrit. Compter une trentaine de secondes, tout le
 calcul se fait côté Google.
 """
@@ -20,9 +20,9 @@ import ee
 import joblib
 import pandas as pd
 
-from extraire_series_gee import (ANNEE, BANDES_S1, BANDES_S2, MOIS, PROJET,
+from extract_series_gee import (ANNEE, BANDES_S1, BANDES_S2, MOIS, PROJET,
                                  construire_image)
-from modele_binaire import construire_variables
+from binary_model import construire_variables
 
 FICHIER_MODELE = Path("data") / "modele_palmier.joblib"
 
@@ -50,7 +50,7 @@ TEXTES = {
             "et {lat_min} à {lat_max} nord.\n"
             "    La réponse ci-dessous n'est adossée à aucune mesure de performance."
         ),
-        "sans_modele": "{fichier} introuvable, lance d'abord modele_binaire.py",
+        "sans_modele": "{fichier} introuvable, lance d'abord binary_model.py",
         "sans_mesure": (
             "{n} bandes sans valeur sur ce point, dont {exemples}.\n"
             "Soit le point sort de la couverture Sentinel-1, soit il est masqué toute "
@@ -74,7 +74,7 @@ TEXTES = {
             "{lat_min} to {lat_max} north.\n"
             "    The answer below is backed by no measured performance."
         ),
-        "sans_modele": "{fichier} not found, run modele_binaire.py first",
+        "sans_modele": "{fichier} not found, run binary_model.py first",
         "sans_mesure": (
             "{n} bands have no value at this point, including {exemples}.\n"
             "Either the point falls outside Sentinel-1 coverage, or it is masked all "
@@ -98,7 +98,7 @@ class MesureImpossible(Exception):
 
 @lru_cache(maxsize=1)
 def charger_modele():
-    """Modèle et métadonnées sauvegardés par modele_binaire.py, lus une seule fois."""
+    """Modèle et métadonnées sauvegardés par binary_model.py, lus une seule fois."""
     return joblib.load(FICHIER_MODELE)
 
 
