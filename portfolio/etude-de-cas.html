@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Classi-fy, détecter le palmier à huile par satellite</title>
+
+<style>
+  :root {
+    /* Neutres à légère dominante verte, choisis pour le sujet forestier. */
+    --ground: #ECF0ED;
+    --surface: #FCFCFB;
+    --surface-sunk: #E3E9E4;
+    --ink: #0F1A15;
+    --ink-soft: #4B5C54;
+    --ink-mute: #74857C;
+    --rule: #D1DAD4;
+    --rule-strong: #B4C1BA;
+
+    /* Deux accents en tension : le radar et l'optique, sujet même de l'étude. */
+    --radar: #0AA5AE;
+    --optique: #C9761B;
+    --erreur: #B91C1C;
+
+    /* Rampe séquentielle teal, clair vers foncé, pour la matrice de confusion. */
+    --seq-1: #EEF7F6;
+    --seq-2: #C3E5E5;
+    --seq-3: #6FC5C9;
+    --seq-4: #0A7F86;
+    --on-seq-light: #0F1A15;
+    --on-seq-dark: #F2F8F7;
+
+    --shadow: 0 1px 2px rgba(15, 26, 21, .05), 0 8px 24px -12px rgba(15, 26, 21, .18);
+
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "SF Mono", Menlo, Consolas, monospace;
+
+    --col: 68ch;
+    --gutter: clamp(1.25rem, 4vw, 3rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0B1310;
+      --surface: #16211D;
+      --surface-sunk: #101A16;
+      --ink: #E4EBE7;
+      --ink-soft: #9FB1A9;
+      --ink-mute: #7A8C84;
+      --rule: #23322C;
+      --rule-strong: #35473F;
+
+      --radar: #12A0A8;
+      --optique: #C07F2C;
+      --erreur: #E05A5A;
+
+      --seq-1: #142626;
+      --seq-2: #1A4749;
+      --seq-3: #1B7E85;
+      --seq-4: #45C3C9;
+      --on-seq-light: #E4EBE7;
+      --on-seq-dark: #08201F;
+
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -12px rgba(0, 0, 0, .7);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0B1310;
+    --surface: #16211D;
+    --surface-sunk: #101A16;
+    --ink: #E4EBE7;
+    --ink-soft: #9FB1A9;
+    --ink-mute: #7A8C84;
+    --rule: #23322C;
+    --rule-strong: #35473F;
+
+    --radar: #12A0A8;
+    --optique: #C07F2C;
+    --erreur: #E05A5A;
+
+    --seq-1: #142626;
+    --seq-2: #1A4749;
+    --seq-3: #1B7E85;
+    --seq-4: #45C3C9;
+    --on-seq-light: #E4EBE7;
+    --on-seq-dark: #08201F;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -12px rgba(0, 0, 0, .7);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: clamp(1rem, .96rem + .2vw, 1.075rem);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 74rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 5rem) var(--gutter) 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(3rem, 6vw, 4.5rem);
+  }
+
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+
+  h1 {
+    font-size: clamp(2.4rem, 1.6rem + 3.4vw, 4.2rem);
+    line-height: 1.0;
+    letter-spacing: -.04em;
+    font-weight: 800;
+  }
+
+  h2 {
+    font-size: clamp(1.5rem, 1.2rem + 1.1vw, 2.05rem);
+    line-height: 1.12;
+    letter-spacing: -.025em;
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: 1.06rem;
+    line-height: 1.3;
+    letter-spacing: -.01em;
+    font-weight: 680;
+  }
+
+  p { margin: 0; }
+  strong { font-weight: 660; color: var(--ink); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .705rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0;
+  }
+
+  .lede {
+    font-size: clamp(1.15rem, 1rem + .6vw, 1.42rem);
+    line-height: 1.45;
+    color: var(--ink-soft);
+    letter-spacing: -.013em;
+    max-width: 52ch;
+  }
+
+  .hero {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .band { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(1.4rem, 3vw, 2.2rem); }
+
+  @media (min-width: 60rem) {
+    .band.split { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); align-items: start; }
+  }
+
+  .stack { display: flex; flex-direction: column; gap: 1.15rem; }
+
+  .rule-top { border-top: 1px solid var(--rule); padding-top: clamp(2rem, 4vw, 3rem); }
+
+  .pull {
+    border-left: 2px solid var(--radar);
+    padding: .15rem 0 .15rem 1.3rem;
+    font-size: clamp(1.05rem, .98rem + .4vw, 1.2rem);
+    line-height: 1.45;
+    letter-spacing: -.012em;
+    color: var(--ink);
+  }
+
+  .avertissement {
+    border-left: 2px solid var(--erreur);
+    padding: .2rem 0 .2rem 1.3rem;
+    font-size: .95rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+
+  figure {
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    box-shadow: var(--shadow);
+    padding: clamp(1.35rem, 3vw, 2.1rem);
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+  }
+
+  figcaption { display: flex; flex-direction: column; gap: .4rem; }
+  figcaption .title { font-size: 1.06rem; font-weight: 680; letter-spacing: -.012em; }
+  figcaption .sub { font-size: .9rem; color: var(--ink-soft); line-height: 1.45; }
+
+  figure img { display: block; width: 100%; height: auto; border-radius: 2px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: .45rem 1.4rem; font-size: .82rem; color: var(--ink-soft); }
+  .legend span { display: inline-flex; align-items: center; gap: .45rem; }
+  .swatch { width: 11px; height: 11px; border-radius: 2px; flex: none; }
+  .swatch.radar { background: var(--radar); }
+  .swatch.optique { background: var(--optique); }
+
+  .scroller { overflow-x: auto; }
+
+  /* Graphique de l'optimisme */
+  .bars { display: flex; flex-direction: column; gap: 1.5rem; min-width: 22rem; }
+  .bar-row { display: flex; flex-direction: column; gap: .45rem; }
+  .bar-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  .bar-name { font-size: .93rem; font-weight: 620; letter-spacing: -.008em; }
+  .bar-nums { font-family: var(--mono); font-size: .8rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .bar-nums b { color: var(--ink); font-weight: 640; }
+  .track { position: relative; height: 30px; background: var(--surface-sunk); border-radius: 3px; }
+  .seg { position: absolute; top: 0; bottom: 0; }
+  .seg-spatial { left: 0; background: var(--radar); border-radius: 3px 0 0 3px; }
+  .seg-gap { background: var(--optique); border-radius: 0 3px 3px 0; border-left: 2px solid var(--surface); }
+  .axis { position: relative; height: 1.35rem; margin-top: .15rem; border-top: 1px solid var(--rule); min-width: 22rem; }
+  .axis span { position: absolute; top: .28rem; transform: translateX(-50%); font-family: var(--mono); font-size: .7rem; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+
+  /* Importance des variables */
+  .imp { display: flex; flex-direction: column; gap: .7rem; min-width: 20rem; }
+  .imp-row { display: grid; grid-template-columns: 9.5rem 1fr 3.4rem; align-items: center; gap: .8rem; }
+  .imp-name { font-size: .8rem; color: var(--ink-soft); text-align: right; }
+  .imp-row.lead .imp-name { color: var(--ink); font-weight: 620; }
+  .imp-track { height: 20px; background: var(--surface-sunk); border-radius: 3px; }
+  .imp-fill { height: 100%; border-radius: 3px; background: var(--optique); min-width: 3px; }
+  .imp-fill.radar { background: var(--radar); }
+  .imp-val { font-family: var(--mono); font-size: .775rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; text-align: right; }
+  .imp-row.lead .imp-val { color: var(--ink); font-weight: 620; }
+
+  /* Chiffres clés */
+  .chiffres {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .chiffre { background: var(--surface); padding: 1.3rem 1.35rem 1.45rem; display: flex; flex-direction: column; gap: .28rem; }
+  .chiffre b { font-size: clamp(1.7rem, 1.3rem + 1.3vw, 2.2rem); line-height: 1; font-weight: 720; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+  .chiffre .quoi { font-size: .9rem; color: var(--ink-soft); line-height: 1.4; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .93rem; min-width: 24rem; }
+  th, td { text-align: left; padding: .62rem .8rem; border-bottom: 1px solid var(--rule); }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  th { font-family: var(--mono); font-size: .705rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-mute); font-weight: 500; border-bottom-color: var(--rule-strong); }
+  th.n { text-align: right; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .puce { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: .5rem; vertical-align: baseline; }
+
+  .chantiers { display: flex; flex-direction: column; gap: 1.15rem; }
+  .chantier { display: flex; flex-direction: column; gap: .3rem; }
+  .chantier h3::before { content: ""; display: block; width: 1.6rem; height: 2px; background: var(--radar); margin-bottom: .55rem; }
+  .chantier p { font-size: .93rem; color: var(--ink-soft); line-height: 1.5; }
+
+  .spec { display: grid; grid-template-columns: auto 1fr; gap: .5rem 1.5rem; font-size: .92rem; align-items: baseline; }
+  .spec dt { font-family: var(--mono); font-size: .705rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-mute); white-space: nowrap; padding-top: .18rem; }
+  .spec dd { margin: 0; color: var(--ink-soft); }
+  .spec dd b { color: var(--ink); font-weight: 620; }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 1.6rem; display: flex; flex-direction: column; gap: .5rem; font-size: .87rem; color: var(--ink-mute); }
+  footer a { color: var(--ink-soft); text-underline-offset: 3px; }
+  footer a:focus-visible { outline: 2px solid var(--radar); outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="hero">
+    <p class="eyebrow">Étude de cas · Télédétection et apprentissage automatique</p>
+    <h1>Classi-fy</h1>
+    <p class="lede">
+      Un modèle qui repère les plantations de palmier à huile dans le bassin du Congo
+      à partir d'images satellite.
+    </p>
+  </header>
+
+  <section class="band split">
+    <div class="stack">
+      <p class="eyebrow">L'usage</p>
+      <h2>Ce qu'il permet de faire</h2>
+    </div>
+    <div class="stack">
+      <p>
+        Savoir où se trouvent les plantations de palmier à huile est un préalable à presque
+        tout : suivre la déforestation, contrôler une concession, décider où envoyer une
+        équipe. En République démocratique du Congo, cette information n'existe nulle part de
+        façon fiable et à jour, et le pays est trop vaste pour qu'on aille vérifier partout.
+      </p>
+      <p>
+        Classi-fy réduit ce champ. Sur une parcelle donnée, il indique la probabilité qu'elle
+        contienne du palmier, à partir d'images satellite publiques et gratuites.
+      </p>
+      <p>
+        L'usage principal est la priorisation. Plutôt que de parcourir cent sites au hasard, on
+        les classe par probabilité décroissante et on commence par ceux qui méritent le plus
+        l'attention. Une équipe qui dispose de dix déplacements les emploie mieux.
+      </p>
+      <p class="pull">
+        Le modèle produit un signal, pas un verdict. Il ne remplace aucune vérification, il
+        indique où regarder d'abord.
+      </p>
+    </div>
+  </section>
+
+  <section class="band split rule-top">
+    <div class="stack">
+      <p class="eyebrow">Le problème</p>
+      <h2>Pourquoi c'est difficile</h2>
+    </div>
+    <div class="stack">
+      <p>
+        Vu d'un satellite optique, qui mesure la lumière renvoyée par le sol, une palmeraie et
+        une forêt tropicale dense se ressemblent énormément. Les deux sont des couverts fermés,
+        verts toute l'année, et leur verdure varie au fil des saisons dans des proportions semblables.
+      </p>
+      <p>
+        C'est la difficulté centrale du problème. Un modèle qui apprend à séparer ces deux
+        couverts risque de s'appuyer non pas sur ce qui les distingue vraiment, mais sur des
+        détails propres à la région où il a appris : la teinte particulière d'un sol, la brume
+        d'une saison, la date d'une prise de vue.
+      </p>
+      <p>
+        Ces détails fonctionnent parfaitement là où le modèle s'est entraîné, et ne valent rien
+        ailleurs. D'où la question qui a structuré tout le projet : <strong>est-ce que ce modèle
+        fonctionne encore dans une région où il n'a jamais mis les pieds ?</strong>
+      </p>
+    </div>
+  </section>
+
+  <section class="band split rule-top">
+    <div class="stack">
+      <p class="eyebrow">L'évaluation</p>
+      <h2>Comment j'ai évalué le modèle</h2>
+    </div>
+    <div class="stack">
+      <p>
+        Pour répondre à cette question, la façon habituelle de tester un modèle ne suffit pas.
+      </p>
+      <p>
+        Elle consiste à mettre de côté une partie des exemples, tirés au hasard, et à s'en
+        servir d'examen. Le problème, en télédétection, est que deux parcelles voisines se
+        ressemblent beaucoup : même sol, même météo, souvent la même image satellite. Avec un
+        tirage au hasard, des parcelles quasi identiques se retrouvent des deux côtés, et le
+        modèle est noté sur des situations très proches de celles qu'il a déjà vues.
+      </p>
+      <p>
+        J'ai donc découpé le territoire en blocs géographiques de 100 km, et j'ai fait en sorte
+        que chaque bloc soit <strong>entièrement</strong> d'un seul côté du découpage. Le modèle
+        apprend sur certaines régions et passe son examen sur d'autres, qu'il découvre.
+      </p>
+      <p>
+        Les deux façons de mesurer donnent des chiffres différents, et l'écart entre elles est
+        instructif.
+      </p>
+    </div>
+  </section>
+
+  <figure>
+    <figcaption>
+      <span class="title">L'écart se réduit à mesure que le modèle s'améliore</span>
+      <span class="sub">
+        Score de 0 à 1. La barre pleine est le score obtenu sur des régions inconnues. Le
+        prolongement est ce que l'examen le plus facile ajoutait en plus.
+      </span>
+    </figcaption>
+
+    <div class="legend">
+      <span><i class="swatch radar"></i> Score sur des régions inconnues</span>
+      <span><i class="swatch optique"></i> Écart avec un tirage au hasard</span>
+    </div>
+
+    <div class="scroller">
+      <div class="bars">
+        <div class="bar-row">
+          <div class="bar-head">
+            <span class="bar-name">Optique seule, trois catégories</span>
+            <span class="bar-nums">régions inconnues <b>0,405</b> · tirage au hasard 0,630</span>
+          </div>
+          <div class="track">
+            <div class="seg seg-spatial" style="width:40.5%"></div>
+            <div class="seg seg-gap" style="left:40.5%; width:22.5%"></div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-head">
+            <span class="bar-name">Optique et radar, trois catégories</span>
+            <span class="bar-nums">régions inconnues <b>0,542</b> · tirage au hasard 0,631</span>
+          </div>
+          <div class="track">
+            <div class="seg seg-spatial" style="width:54.2%"></div>
+            <div class="seg seg-gap" style="left:54.2%; width:8.9%"></div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-head">
+            <span class="bar-name">Optique et radar, palmier ou non</span>
+            <span class="bar-nums">régions inconnues <b>0,821</b> · tirage au hasard 0,839</span>
+          </div>
+          <div class="track">
+            <div class="seg seg-spatial" style="width:82.1%"></div>
+            <div class="seg seg-gap" style="left:82.1%; width:1.9%"></div>
+          </div>
+        </div>
+        <div class="axis">
+          <span style="left:0">0</span>
+          <span style="left:25%">0,25</span>
+          <span style="left:50%">0,50</span>
+          <span style="left:75%">0,75</span>
+          <span style="left:100%">1,0</span>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <section class="band split rule-top">
+    <div class="stack">
+      <p class="eyebrow">La solution</p>
+      <h2>Ce qui a changé le résultat</h2>
+    </div>
+    <div class="stack">
+      <p>
+        L'optique mesure la couleur. Il fallait quelque chose qui mesure la forme.
+      </p>
+      <p>
+        Le radar satellite ne photographie pas le paysage : il envoie une onde et écoute
+        l'écho. Ce qu'il perçoit, c'est la structure du couvert végétal. Une plantation a des
+        arbres alignés, de hauteur homogène, et renvoie un écho régulier. Une forêt naturelle
+        est désordonnée, et son écho l'est aussi.
+      </p>
+      <p>
+        Là où l'optique ne voyait aucune différence, le radar en mesure une. Il a aussi un
+        avantage pratique : il traverse les nuages. Sur une région couverte une bonne partie de
+        l'année, c'est ce qui fait la différence entre une donnée exploitable et pas de donnée
+        du tout.
+      </p>
+      <p>
+        Avec le radar, et en regroupant la question en deux catégories, palmier ou pas de
+        palmier, le score sur des régions inconnues atteint <strong>0,821</strong>, mesuré sur
+        cinq examens successifs portant chacun sur des régions différentes.
+      </p>
+    </div>
+  </section>
+
+  <figure>
+    <figcaption>
+      <span class="title">Le radar porte l'essentiel du signal</span>
+      <span class="sub">
+        Ce que le modèle perd en performance quand on rend une variable inutilisable. Plus la
+        barre est longue, plus la variable comptait.
+      </span>
+    </figcaption>
+
+    <div class="legend">
+      <span><i class="swatch radar"></i> Variable radar</span>
+      <span><i class="swatch optique"></i> Variable optique</span>
+    </div>
+
+    <div class="scroller">
+      <div class="imp">
+        <div class="imp-row lead">
+          <span class="imp-name">Écart radar VV et VH</span>
+          <div class="imp-track"><div class="imp-fill radar" style="width:100%"></div></div>
+          <span class="imp-val">0,170</span>
+        </div>
+        <div class="imp-row">
+          <span class="imp-name">Proche infrarouge</span>
+          <div class="imp-track"><div class="imp-fill" style="width:19.2%"></div></div>
+          <span class="imp-val">0,033</span>
+        </div>
+        <div class="imp-row">
+          <span class="imp-name">Radar VH</span>
+          <div class="imp-track"><div class="imp-fill radar" style="width:9.8%"></div></div>
+          <span class="imp-val">0,017</span>
+        </div>
+        <div class="imp-row">
+          <span class="imp-name">Radar VV</span>
+          <div class="imp-track"><div class="imp-fill radar" style="width:7.7%"></div></div>
+          <span class="imp-val">0,013</span>
+        </div>
+        <div class="imp-row">
+          <span class="imp-name">Indice d'eau NDWI</span>
+          <div class="imp-track"><div class="imp-fill" style="width:6.0%"></div></div>
+          <span class="imp-val">0,010</span>
+        </div>
+        <div class="imp-row">
+          <span class="imp-name">Variation annuelle du NDWI</span>
+          <div class="imp-track"><div class="imp-fill" style="width:2.0%"></div></div>
+          <span class="imp-val">0,003</span>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <section class="band split rule-top">
+    <div class="stack">
+      <p class="eyebrow">Les cartes</p>
+      <h2>Les cartes montrent aussi ce que le modèle rate</h2>
+    </div>
+    <div class="stack">
+      <p>
+        Un score résume, il ne montre pas. J'ai donc cartographié les résultats de
+        l'évaluation.
+      </p>
+      <p>
+        Ces cartes affichent <strong>les points de test eux-mêmes</strong>, ceux sur lesquels la
+        performance a été mesurée. Chaque point est une parcelle, et sa couleur dit ce que le
+        modèle en a fait.
+      </p>
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr><th>Couleur</th><th>Situation</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="puce" style="background:#0AA5AE"></span>Palmier détecté</td>
+              <td>il y avait du palmier, le modèle l'a vu</td>
+            </tr>
+            <tr>
+              <td><span class="puce" style="background:#2C5FBF"></span>Correctement écarté</td>
+              <td>il n'y avait pas de palmier, le modèle n'en a pas annoncé</td>
+            </tr>
+            <tr>
+              <td><span class="puce" style="background:#C9761B"></span>Fausse alerte</td>
+              <td>il n'y avait pas de palmier, le modèle en a annoncé</td>
+            </tr>
+            <tr>
+              <td><span class="puce" style="background:#B91C1C"></span>Palmier manqué</td>
+              <td>il y avait du palmier, le modèle ne l'a pas vu</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Les deux premières situations sont des réussites, les deux suivantes des erreurs. Ce
+        sont les erreurs qui demanderaient une vérification humaine, et c'est pour les rendre
+        visibles que la carte existe.
+      </p>
+    </div>
+  </section>
+
+  <figure>
+    <img src="carte-blocs-test-en.png"
+         alt="Deux cartes côte à côte montrant les points de test de deux blocs de 100 km,
+              colorés selon que le modèle a détecté, manqué ou faussement annoncé du palmier.">
+    <figcaption>
+      <span class="title">Le même modèle, deux régions</span>
+      <span class="sub">
+        Les deux blocs placés côte à côte sont celui où le modèle réussit le mieux et celui où
+        il échoue le plus, parmi les sept blocs d'évaluation. Sous chaque carte, une barre
+        indique la composition du bloc. L'encart situe les 34 blocs utilisés dans l'étude.
+      </span>
+    </figcaption>
+    <p class="avertissement">
+      Ces cartes représentent les points de test sur lesquels Classi-fy a été évalué. Elles ne
+      sont pas une carte de prédiction continue et ne décrivent pas encore l'ensemble des
+      paysages de la RDC.
+    </p>
+  </figure>
+
+  <section class="band split">
+    <div class="stack">
+      <p class="eyebrow">Le choix</p>
+      <h2>Pourquoi je montre le mauvais bloc</h2>
+    </div>
+    <div class="stack">
+      <p>
+        Dans la cuvette centrale, le modèle manque 6 palmeraies sur 200. Au Sud-Kivu, il en
+        manque 50 sur 200.
+      </p>
+      <p>
+        Montrer le mauvais bloc est délibéré. Un modèle ne se comporte pas de la même façon
+        partout, et présenter uniquement la région où il brille donnerait une image fausse de ce
+        qu'on peut en attendre.
+      </p>
+      <p>
+        L'écart entre ces deux cartes est une information utile pour qui voudrait s'en servir :
+        il dit qu'une vérification locale reste nécessaire avant de faire confiance au modèle
+        dans une zone donnée.
+      </p>
+    </div>
+  </section>
+
+  <section class="band split rule-top">
+    <div class="stack">
+      <p class="eyebrow">Les chiffres</p>
+      <h2>Ce que disent les chiffres</h2>
+    </div>
+    <div class="stack">
+      <p>
+        Maintenant que les cartes sont lisibles, les chiffres prennent leur sens. Sur l'ensemble
+        des parcelles de test, réparties dans des régions que le modèle n'avait jamais vues :
+      </p>
+      <div class="chiffres">
+        <div class="chiffre"><b>983</b><span class="quoi">palmeraies retrouvées</span></div>
+        <div class="chiffre"><b>107</b><span class="quoi">palmeraies manquées</span></div>
+        <div class="chiffre"><b>146</b><span class="quoi">fausses alertes</span></div>
+        <div class="chiffre"><b>554</b><span class="quoi">zones correctement écartées</span></div>
+      </div>
+      <p>
+        Traduit en usage concret : sur 100 palmeraies existantes, le modèle en signale 90. Quand
+        il annonce du palmier, il a raison dans environ 87 cas sur 100.
+      </p>
+      <p>
+        C'est exactement le profil d'un outil de priorisation. Il resserre fortement le champ à
+        examiner, sans le refermer complètement. Les 107 palmeraies manquées rappellent qu'une
+        absence de signal n'est pas une preuve d'absence, et les 146 fausses alertes qu'un
+        signal reste à confirmer.
+      </p>
+    </div>
+  </section>
+
+  <section class="band split rule-top">
+    <div class="stack">
+      <p class="eyebrow">Le terrain</p>
+      <h2>Ce que le classement fait gagner</h2>
+    </div>
+    <div class="stack">
+      <p>
+        Un score dit si le modèle a raison. Il ne dit pas ce qu'on gagne à s'en servir. La
+        question d'un chef de mission est autre : si je visite les parcelles dans l'ordre du
+        modèle, combien de palmeraies aurai-je trouvées après un quart des visites ?
+      </p>
+      <p>
+        J'ai donc classé les 8 658 parcelles par probabilité décroissante, puis compté. Pour
+        trouver la moitié des palmeraies, il faut parcourir 32 % de la liste. En visitant au
+        hasard, sans modèle, il en faudrait 50 %. Et un classement parfait, qui mettrait toutes
+        les palmeraies en tête, en demanderait 30 % : sur cette portion, le modèle est à deux
+        points de l'optimum.
+      </p>
+      <p>
+        Le gain se resserre ensuite. Pour trouver neuf palmeraies sur dix, il faut encore 67 % de
+        la liste, contre 90 % au hasard. C'est le comportement attendu d'un outil de
+        priorisation : il paie beaucoup sur les premières visites, de moins en moins à mesure
+        qu'on veut l'exhaustivité.
+      </p>
+      <p>
+        Ce gain n'est pas le même partout. Bloc par bloc, la part de palmeraies signalées a une
+        médiane de 90 %, mais trois blocs sur 34 tombent sous 70 %, le plus faible à 58 %. C'est
+        cette dispersion, et non la moyenne, qui décide si le classement est utilisable dans une
+        région donnée.
+      </p>
+    </div>
+  </section>
+
+  <figure>
+    <img src="gain-mission-en.png"
+         alt="Courbe montrant la part de palmeraies trouvées selon la part de parcelles visitées,
+              pour trois ordres de visite : celui du modèle, un ordre parfait et un ordre au
+              hasard. À droite, le rappel de chacun des 34 blocs.">
+    <figcaption>
+      <span class="title">La moitié des palmeraies en un tiers des visites</span>
+      <span class="sub">
+        Les parcelles sont classées par probabilité décroissante, puis visitées en partant du
+        haut de la liste. Les deux courbes de référence donnent la borne haute, un classement
+        parfait, et l'étalon, un ordre au hasard. En bas à droite, chaque point est un des 34
+        blocs, placé sur la part de palmeraies qu'il signale.
+      </span>
+    </figcaption>
+    <p class="avertissement">
+      L'échantillon compte six parcelles de palmier sur dix, parce que l'échantillonnage a visé
+      les zones où le palmier se trouve. Sur un territoire réel, où il est bien plus rare, le
+      gain de tri comme le coût des fausses alertes seraient différents.
+    </p>
+  </figure>
+
+  <section class="band split rule-top">
+    <div class="stack">
+      <p class="eyebrow">La maquette</p>
+      <h2>À quoi ressemble la liste sur le terrain</h2>
+    </div>
+    <div class="stack">
+      <p>
+        Une liste ordonnée reste une liste. Pour préparer une tournée, il faut la voir : où sont
+        les parcelles prioritaires, si elles se regroupent, quelle part on écarte d'emblée.
+      </p>
+      <p>
+        J'ai donc dessiné la maquette sur un bloc, au Sud-Ubangi. Les 200 parcelles y sont
+        réparties en trois décisions plutôt qu'en quatre couleurs de matrice, parce qu'une
+        tournée n'a que trois issues : on y va d'abord, on regarde ensuite, on laisse. Le seuil
+        haut est 0,8, le seuil bas 0,4.
+      </p>
+      <p>
+        Le panneau de droite est le garde-fou de celui de gauche. Une carte de priorité seule
+        laisserait croire qu'une couleur vaut une confirmation. Les barres rappellent ce que
+        chaque tranche contient réellement : 95 % de palmier au-dessus de 0,8, 77 % entre 0,6 et
+        0,8, 53 % entre 0,4 et 0,6, 7 % en dessous de 0,2. La moyenne de l'échantillon, 61 %,
+        donne le point de comparaison sans lequel ces chiffres ne veulent rien dire.
+      </p>
+      <p>
+        C'est une maquette et non un outil. Elle sert à décider de quoi une carte de mission doit
+        être faite avant de la construire.
+      </p>
+    </div>
+  </section>
+
+  <figure>
+    <img src="carte-priorite-en.png"
+         alt="À gauche, les 200 parcelles d'un bloc de 100 km colorées selon trois niveaux de
+              priorité de vérification. À droite, la part de palmier réellement présent dans
+              chaque tranche de probabilité.">
+    <figcaption>
+      <span class="title">Où regarder en premier</span>
+      <span class="sub">
+        Les trois niveaux traduisent la probabilité en décision de tournée : à vérifier d'abord
+        au-dessus de 0,8, à regarder ensuite entre 0,4 et 0,8, mis de côté en dessous. Les barres
+        de droite disent ce que chaque tranche contient réellement, et l'encart situe le bloc
+        parmi les 34.
+      </span>
+    </figcaption>
+    <p class="avertissement">
+      Maquette dessinée sur un bloc d'évaluation. Ce n'est pas une carte du palmier en RDC, et
+      une probabilité élevée ne confirme pas à elle seule la présence de palmier.
+    </p>
+  </figure>
+
+  <section class="band split rule-top">
+    <div class="stack">
+      <p class="eyebrow">Les limites</p>
+      <h2>Ce que le modèle ne permet pas encore</h2>
+    </div>
+    <div class="stack">
+      <p class="pull">
+        Ce modèle n'est pas encore fait pour remplir une carte continue de la RDC.
+      </p>
+      <p>
+        La raison tient à la façon dont il a appris. Sa catégorie sans palmier ne représente pas
+        l'ensemble des paysages congolais : elle représente ce qui entoure les palmeraies,
+        c'est-à-dire surtout de la forêt et des cultures voisines.
+      </p>
+      <p>
+        Appliqué à un territoire entier, il rencontrerait des rivières, des villages, des sols
+        nus, de la savane sèche, des reliefs. Autant de milieux qu'il n'a jamais eu l'occasion
+        d'apprendre à écarter. Son comportement y est inconnu, et rien ne permet d'affirmer
+        qu'il y serait fiable.
+      </p>
+      <p>
+        Afficher une couche de prédiction couvrant tout le pays serait donc trompeur, même
+        accompagnée d'un avertissement : l'image serait belle et l'information fausse. La carte
+        des points de test, elle, est juste, parce qu'elle montre précisément le domaine dans
+        lequel la performance a été mesurée.
+      </p>
+      <p>
+        Deux autres limites méritent d'être connues. Le modèle ne distingue pas une plantation
+        industrielle d'une palmeraie villageoise, parce que ce qui les sépare est la géométrie
+        des plantations et non ce qu'en voit un satellite point par point. Et les étiquettes qui
+        lui ont servi de référence proviennent elles-mêmes d'un travail de cartographie, avec
+        ses propres erreurs, que Classi-fy hérite sans les corriger.
+      </p>
+    </div>
+  </section>
+
+  <section class="band split">
+    <div class="stack">
+      <p class="eyebrow">La suite</p>
+      <h2>Quatre chantiers, dans cet ordre</h2>
+    </div>
+    <div class="chantiers">
+      <div class="chantier">
+        <h3>Élargir les milieux sans palmier</h3>
+        <p>Apprendre au modèle à reconnaître savane, ville, montagne et zone humide. C'est ce
+          qui manque le plus.</p>
+      </div>
+      <div class="chantier">
+        <h3>Respecter la rareté réelle du palmier</h3>
+        <p>Dans mon jeu de données, le palmier est très présent parce que l'échantillonnage a
+          visé les zones où il se trouve. Sur le territoire réel, il occupe une fraction de
+          pourcent. Un modèle destiné à couvrir un pays doit être entraîné et réglé dans ces
+          proportions.</p>
+      </div>
+      <div class="chantier">
+        <h3>Ajouter le relief et la texture</h3>
+        <p>L'altitude et la pente écartent d'emblée des zones où le palmier ne pousse pas. Les
+          variables de texture, qui décrivent l'organisation spatiale du couvert, sont la seule
+          piste sérieuse pour distinguer plantation industrielle et palmeraie villageoise.</p>
+      </div>
+      <div class="chantier">
+        <h3>Obtenir des étiquettes de terrain</h3>
+        <p>C'est le seul moyen de mesurer une performance réelle plutôt qu'une concordance avec
+          un autre travail cartographique.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band split rule-top">
+    <div class="stack">
+      <p class="eyebrow">Pour finir</p>
+      <h2>Un outil de préparation, pas de remplacement</h2>
+    </div>
+    <div class="stack">
+      <p>
+        Classi-fy aide à préparer une vérification humaine : il désigne les endroits à regarder
+        en premier et écarte une grande partie du reste. Il ne remplace pas le terrain, et sur
+        les régions qu'il n'a pas apprises, il ne dit rien de fiable.
+      </p>
+      <p>
+        Ce que je retiens de ce projet est moins le chiffre obtenu que la manière de l'obtenir.
+        Une évaluation par régions disjointes coûte quelques points de score affiché, et donne
+        en échange quelque chose de plus utile : savoir où le modèle tient et où il ne tient
+        pas.
+      </p>
+    </div>
+  </section>
+
+  <section class="band split rule-top">
+    <div class="stack">
+      <p class="eyebrow">Méthode</p>
+      <h2>Le détail, pour qui veut vérifier</h2>
+    </div>
+    <div class="stack">
+      <dl class="spec">
+        <dt>Références</dt>
+        <dd>Cartes d'extension du palmier à huile de <b>Descals et al. 2024</b>, publiées sur
+          Zenodo sous licence CC BY 4.0, à 10 mètres de résolution et validées sur le terrain.</dd>
+
+        <dt>Échantillon</dt>
+        <dd><b>8 658 points</b> répartis sur 34 blocs de 100 km, entre 12,1 et 30,1 degrés est
+          et entre -4,9 et 4,0 degrés nord. Cela couvre la largeur du bassin du Congo, avec 24
+          blocs en République démocratique du Congo et 10 chez six pays voisins.</dd>
+
+        <dt>Images</dt>
+        <dd>Sentinel-2 pour l'optique, six bandes du visible à l'infrarouge moyen, nuages et
+          ombres masqués. Sentinel-1 pour le radar, polarisations VV et VH. Année de référence
+          <b>2021</b>. Une valeur par mois et par bande, soit 96 mesures par point.</dd>
+
+        <dt>Variables</dt>
+        <dd>34 variables annuelles : indices de végétation et leurs statistiques, moyennes et
+          variabilités par bande, et <b>l'écart entre les deux polarisations radar</b>, le plus
+          informatif de tous.</dd>
+
+        <dt>Évaluation</dt>
+        <dd>Validation croisée par blocs spatiaux, cinq plis, le groupe étant le bloc de 100 km.
+          Score principal <b>F1 macro de 0,821</b>, écart type 0,015 entre les cinq plis. Un
+          modèle qui répondrait toujours la catégorie majoritaire obtiendrait 0,378 sur le même
+          jeu.</dd>
+
+        <dt>Modèles</dt>
+        <dd>Forêt aléatoire et gradient boosting donnent le même résultat à cinq millièmes près, ce
+          qui indique que la performance vient des variables retenues et non de l'algorithme.</dd>
+
+        <dt>Outils</dt>
+        <dd>Python, Google Earth Engine, scikit-learn, geopandas, rasterio, pandas.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      Sources : Descals, A. et al. (2024). <em>Global Oil Palm extent maps</em>. Zenodo,
+      10.5281/zenodo.13379129, CC BY 4.0. Copernicus Sentinel-1 et Sentinel-2, Agence spatiale
+      européenne.
+    </p>
+  </footer>
+
+</div>
+
+</body>
+</html>
