@@ -2,6 +2,8 @@
 
 Oil palm detection across the Congo Basin from Sentinel-1 and Sentinel-2 time series. Trained on 34 blocks, 24 of them in the Democratic Republic of the Congo.
 
+Designed and built by **Esther Bahati**, [eurekapx.com](https://www.eurekapx.com). Full case study: [eurekapx.com/oil-palm-detection](https://www.eurekapx.com/oil-palm-detection).
+
 [Version française](README.md)
 
 ---
@@ -406,3 +408,28 @@ The `data/` folder is excluded from the repository. It holds the rasters, the ex
 - Kalischek, N. et al. (2023). Cocoa plantations are associated with deforestation in Côte d'Ivoire and Ghana. *Nature Food*, 4, 384-393. [Paper](https://www.nature.com/articles/s43016-023-00751-8), [code](https://github.com/D1noFuzi/cocoamapping)
 - ESA WorldCereal Reference Data Module. [rdm.esa-worldcereal.org](https://rdm.esa-worldcereal.org/)
 - Copernicus Sentinel-1 and Sentinel-2, European Space Agency
+
+---
+
+## How to cite this work
+
+If you use this code or these results, please cite:
+
+> Bahati, E. (2026). *Classi-fy: oil palm detection in the Congo Basin from Sentinel-1 and Sentinel-2 time series*. https://github.com/Estherbh/Classi-fy
+
+```bibtex
+@software{bahati_classify_2026,
+  author = {Bahati, Esther},
+  title  = {Classi-fy: oil palm detection in the Congo Basin from Sentinel-1 and Sentinel-2 time series},
+  year   = {2026},
+  url    = {https://github.com/Estherbh/Classi-fy}
+}
+```
+
+---
+
+## License
+
+Code released under the [MIT](LICENSE) license, © 2026 Esther Bahati. You may reuse, modify and redistribute it, provided you keep the author's name and the license notice.
+
+Source data keep their own licenses: the Descals et al. maps are CC BY 4.0, Sentinel imagery falls under the Copernicus license.

@@ -2,6 +2,8 @@
 
 Détection du palmier à huile dans le bassin du Congo à partir de séries temporelles Sentinel-1 et Sentinel-2. Entraîné sur 34 blocs, dont 24 en République démocratique du Congo.
 
+Conçu et réalisé par **Esther Bahati**, [eurekapx.com](https://www.eurekapx.com). Étude de cas complète : [eurekapx.com/oil-palm-detection](https://www.eurekapx.com/oil-palm-detection).
+
 [English version](README.en.md)
 
 ---
@@ -406,3 +408,28 @@ Le dossier `data/` est exclu du dépôt. Il contient les rasters, les séries ex
 - Kalischek, N. et al. (2023). Cocoa plantations are associated with deforestation in Côte d'Ivoire and Ghana. *Nature Food*, 4, 384-393. [Article](https://www.nature.com/articles/s43016-023-00751-8), [code](https://github.com/D1noFuzi/cocoamapping)
 - ESA WorldCereal Reference Data Module. [rdm.esa-worldcereal.org](https://rdm.esa-worldcereal.org/)
 - Copernicus Sentinel-1 et Sentinel-2, European Space Agency
+
+---
+
+## Comment citer ce travail
+
+Si vous utilisez ce code ou ces résultats, merci de citer :
+
+> Bahati, E. (2026). *Classi-fy : détection du palmier à huile dans le bassin du Congo à partir de séries temporelles Sentinel-1 et Sentinel-2*. https://github.com/Estherbh/Classi-fy
+
+```bibtex
+@software{bahati_classify_2026,
+  author = {Bahati, Esther},
+  title  = {Classi-fy : détection du palmier à huile dans le bassin du Congo à partir de séries temporelles Sentinel-1 et Sentinel-2},
+  year   = {2026},
+  url    = {https://github.com/Estherbh/Classi-fy}
+}
+```
+
+---
+
+## Licence
+
+Code publié sous licence [MIT](LICENSE), © 2026 Esther Bahati. Vous pouvez le réutiliser, le modifier et le redistribuer, à condition de conserver le nom de l'autrice et la mention de licence.
+
+Les données sources gardent leur propre licence : les cartes de Descals et al. sont sous CC BY 4.0, les images Sentinel sous la licence Copernicus.
