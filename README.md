@@ -1,426 +1,424 @@
 # Classi-fy
 
-Détection du palmier à huile dans le bassin du Congo à partir de séries temporelles Sentinel-1 et Sentinel-2. Entraîné sur 34 blocs, dont 24 en République démocratique du Congo.
+Oil palm detection across the Congo Basin from Sentinel-1 and Sentinel-2 time series. Trained on 34 blocks, 24 of them in the Democratic Republic of the Congo.
 
-Conçu et réalisé par **Esther Bahati**, [eurekapx.com](https://www.eurekapx.com). Étude de cas complète : [eurekapx.com/oil-palm-detection](https://www.eurekapx.com/oil-palm-detection).
-
-[English version](README.en.md)
+Designed and built by **Esther Bahati**, [eurekapx.com](https://www.eurekapx.com). Full case study: [eurekapx.com/oil-palm-detection](https://www.eurekapx.com/oil-palm-detection).
 
 ---
 
-## Résultat
+## Result
 
-Classification binaire, palmier contre pas de palmier, évaluée en validation croisée **spatiale** sur 34 blocs géographiques disjoints.
+Binary classification, palm against no palm, evaluated with **spatial** cross-validation over 34 disjoint geographic blocks.
 
-| Indicateur | Valeur |
+| Metric | Value |
 |---|---|
-| F1 macro (validation spatiale, 5 plis) | **0,821 ± 0,015** |
-| F1 macro (validation aléatoire) | 0,839 ± 0,010 |
-| Optimisme de la validation aléatoire | +0,019 |
-| Plancher (modèle toujours majoritaire) | 0,378 |
-| Justesse globale | 0,86 |
+| Macro F1 (spatial validation, 5 folds) | **0.821 ± 0.015** |
+| Macro F1 (random validation) | 0.839 ± 0.010 |
+| Optimism of random validation | +0.019 |
+| Floor (always-majority model) | 0.378 |
+| Overall accuracy | 0.86 |
 
-Le chiffre à retenir est **0,821**. Il est mesuré sur des régions que le modèle n'a jamais vues pendant son apprentissage.
+The number to report is **0.821**. It is measured on regions the model never saw during training.
 
-L'optimisme de +0,019 signifie que le modèle ne perd que 1,9 point en changeant complètement de région. Il s'appuie sur un signal transportable et non sur des particularités locales.
+An optimism of +0.019 means the model loses only 1.9 points when moving to a completely different region. It relies on a transferable signal rather than on local artefacts.
 
-### Détail par classe
+### Per class
 
-| Classe | Précision | Rappel | F1 | Effectif |
+| Class | Precision | Recall | F1 | Support |
 |---|---|---|---|---|
-| palmier | 0,87 | 0,90 | 0,89 | 1 090 |
-| pas_de_palmier | 0,84 | 0,79 | 0,81 | 700 |
+| palm | 0.87 | 0.90 | 0.89 | 1,090 |
+| no palm | 0.84 | 0.79 | 0.81 | 700 |
 
-### Matrice de confusion
+### Confusion matrix
 
-Lignes : la réalité. Colonnes : la prédiction du modèle.
+Rows: ground truth. Columns: model prediction.
 
-| | prédit palmier | prédit pas de palmier |
+| | predicted palm | predicted no palm |
 |---|---|---|
-| **était palmier** | 983 | 107 |
-| **était sans palmier** | 146 | 554 |
+| **was palm** | 983 | 107 |
+| **was not palm** | 146 | 554 |
 
-Lecture : sur 1 090 palmeraies réelles, le modèle en retrouve 983 et en rate 107. Sur 700 zones sans palmier, il en signale 146 à tort.
+Reading: out of 1,090 real palm plots, the model finds 983 and misses 107. Out of 700 palm-free areas, it wrongly flags 146.
 
 ---
 
-## Données d'entraînement
+## Training data
 
-### Étiquettes
+### Labels
 
 **Descals et al. 2024, Global Oil Palm extent maps.**
-Zenodo : [10.5281/zenodo.13379129](https://zenodo.org/records/13379129), sous licence CC BY 4.0.
+Zenodo: [10.5281/zenodo.13379129](https://zenodo.org/records/13379129), licensed CC BY 4.0.
 
-Cartes matricielles à 10 m de résolution couvrant la période 2016 à 2021, accompagnées de 18 812 points de validation terrain. Trois valeurs de pixel :
+Raster maps at 10 m resolution covering 2016 to 2021, together with 18,812 field validation points. Three pixel values:
 
-| Valeur | Classe |
+| Value | Class |
 |---|---|
-| 0 | pas de palmier |
-| 1 | palmier industriel |
-| 2 | palmier villageois |
+| 0 | no palm |
+| 1 | industrial palm |
+| 2 | smallholder palm |
 
-Fichiers utilisés :
+Files used:
 
-- `Grid_OilPalm2016-2021.zip` : la grille des tuiles de 100 km, qui sert de découpage spatial
-- `GlobalOilPalm_OP-extent_<id>.tif` : les rasters d'extension, un par tuile
+- `Grid_OilPalm2016-2021.zip`: the 100 km tile grid, which doubles as the spatial split
+- `GlobalOilPalm_OP-extent_<id>.tif`: the extent rasters, one per tile
 
-Pourquoi cette source. C'est la seule couche ouverte, étiquetée, à 10 m et validée sur le terrain qui couvre le bassin du Congo. Les alternatives envisagées ne convenaient pas : la carte cacao de Kalischek et al. (*Nature Food*, 2023) et le jeu COLD-CI couvrent la Côte d'Ivoire et le Ghana, pas la RDC ; le [WorldCereal Reference Data Module](https://rdm.esa-worldcereal.org/) est orienté céréales et compte peu de points en Afrique centrale.
+Why this source. It is the only open, labelled, 10 m, field-validated layer covering the Congo Basin. The alternatives considered did not fit: the cocoa map by Kalischek et al. (*Nature Food*, 2023) and the COLD-CI dataset cover Côte d'Ivoire and Ghana, not the DRC; the [WorldCereal Reference Data Module](https://rdm.esa-worldcereal.org/) is cereal-oriented and holds few points in Central Africa.
 
-### Échantillonnage
+### Sampling
 
-- Sélection : boîte englobante 12,2° à 31,3° est, -13,5° à 5,4° nord, croisée avec la grille de tuiles
-- 34 tuiles de 100 km contiennent du palmier, couvrant 12,1° à 30,1° est et -4,9° à 4,0° nord
-- Un point tous les 200 m au maximum, soit un pixel sur 20 dans chaque direction : deux pixels voisins d'une même plantation sont quasi identiques et gonfleraient le jeu sans ajouter d'information
-- Tirage équilibré entre les trois classes, dans la fenêtre la plus dense en palmier de chaque tuile
-- Graine aléatoire fixée à 42
+- Selection: bounding box 12.2° to 31.3° east, -13.5° to 5.4° north, intersected with the tile grid
+- 34 tiles of 100 km contain palm, spanning 12.1° to 30.1° east and -4.9° to 4.0° north
+- One point every 200 m at most, that is one pixel in 20 along each axis: two neighbouring pixels of the same plantation are nearly identical and would inflate the dataset without adding information
+- Balanced draw across the three classes, within the palm-densest window of each tile
+- Random seed fixed at 42
 
-Résultat : **8 658 points répartis sur 34 blocs**.
+Result: **8,658 points across 34 blocks**.
 
-| Classe | Effectif |
+| Class | Count |
 |---|---|
-| pas_de_palmier | 3 400 |
-| palmier_industriel | 2 728 |
-| palmier_villageois | 2 530 |
+| no palm | 3,400 |
+| industrial palm | 2,728 |
+| smallholder palm | 2,530 |
 
-### Répartition géographique réelle
+### Actual geographic spread
 
-La sélection se fait par **boîte rectangulaire, pas par frontière nationale**. L'emprise choisie déborde donc sur les pays voisins, et le jeu d'entraînement n'est pas exclusivement congolais. Vérification faite tuile par tuile contre les frontières `USDOS/LSIB_SIMPLE/2017` :
+Selection is done by **bounding box, not by national border**. The chosen extent therefore spills into neighbouring countries, and the training set is not exclusively Congolese. Checked tile by tile against the `USDOS/LSIB_SIMPLE/2017` boundaries:
 
-| Pays | Blocs | Points | Part |
+| Country | Blocks | Points | Share |
 |---|---|---|---|
-| **République démocratique du Congo** | 24 | 6 214 | **71,8 %** |
-| République du Congo | 4 | 936 | 10,8 % |
-| République centrafricaine | 2 | 508 | 5,9 % |
-| Cameroun | 1 | 300 | 3,5 % |
-| Tanzanie | 1 | 300 | 3,5 % |
-| Burundi | 1 | 200 | 2,3 % |
-| Angola | 1 | 200 | 2,3 % |
+| **Democratic Republic of the Congo** | 24 | 6,214 | **71.8 %** |
+| Republic of the Congo | 4 | 936 | 10.8 % |
+| Central African Republic | 2 | 508 | 5.9 % |
+| Cameroon | 1 | 300 | 3.5 % |
+| Tanzania | 1 | 300 | 3.5 % |
+| Burundi | 1 | 200 | 2.3 % |
+| Angola | 1 | 200 | 2.3 % |
 
-En RDC, les blocs se répartissent d'ouest en est : la façade atlantique du Kongo Central, la cuvette centrale entre 18° et 22° est, le nord de la Tshopo et du Bas-Uélé, puis les blocs orientaux entre 28° et 29° est, du côté du Sud-Kivu et du Tanganyika.
+Within the DRC the blocks run west to east: the Atlantic side of Kongo Central, the central basin between 18° and 22° east, northern Tshopo and Bas-Uélé, then the eastern blocks between 28° and 29° east, towards South Kivu and Tanganyika.
 
-Ce débordement n'affaiblit pas le modèle, il élargit son domaine : la validation croisée spatiale porte sur l'ensemble du bassin du Congo et non sur un seul pays. Mais il interdit de présenter le résultat comme un modèle strictement congolais, et il est énoncé ici pour cette raison.
+This spill does not weaken the model, it widens its domain: spatial cross-validation covers the Congo Basin rather than a single country. But it forbids presenting the result as a strictly Congolese model, and it is stated here for that reason.
 
-### Imagerie
+### Imagery
 
-Année de référence : **2021**, dernière année couverte par la carte Descals.
+Reference year: **2021**, the last year covered by the Descals map.
 
-| Capteur | Collection Earth Engine | Bandes | Rôle |
+| Sensor | Earth Engine collection | Bands | Role |
 |---|---|---|---|
-| Sentinel-2 L2A | `COPERNICUS/S2_SR_HARMONIZED` | B2, B3, B4, B8, B11, B12 | couleur et vigueur de la végétation |
-| Sentinel-1 GRD | `COPERNICUS/S1_GRD` | VV, VH | structure de la canopée |
+| Sentinel-2 L2A | `COPERNICUS/S2_SR_HARMONIZED` | B2, B3, B4, B8, B11, B12 | colour and vegetation vigour |
+| Sentinel-1 GRD | `COPERNICUS/S1_GRD` | VV, VH | canopy structure |
 
-Traitement :
+Processing:
 
-- Masquage des nuages, ombres, cirrus et neige par la bande de classification SCL (valeurs 3, 8, 9, 10, 11)
-- Scènes retenues sous 80 % de couverture nuageuse
-- Sentinel-1 filtré en mode IW, double polarisation VV et VH
-- Une médiane mensuelle par bande, soit 12 composites
-- Repli sur la médiane annuelle là où un mois est entièrement masqué, sinon la saison des pluies vide des mois entiers et l'échantillonnage supprime les points concernés
+- Clouds, shadows, cirrus and snow masked through the SCL classification band (values 3, 8, 9, 10, 11)
+- Scenes kept below 80 % cloud cover
+- Sentinel-1 filtered to IW mode, dual VV and VH polarisation
+- One monthly median per band, giving 12 composites
+- Fallback to the annual median wherever a month is fully masked, otherwise the rainy season empties entire months and the sampling step drops the affected points
 
-Chaque point porte donc **96 mesures**, soit 12 mois × 8 bandes.
+Each point therefore carries **96 measurements**, that is 12 months by 8 bands.
 
 ---
 
-## Méthodologie
+## Methodology
 
-### La chaîne, en quatre étapes indépendantes
+### The pipeline, four independent steps
 
 ```
-echantillonner_palmier.py    rasters Zenodo        -> data/echantillons_rdc.geojson
-extraire_series_gee.py       Sentinel-1 et -2      -> CSV dans Google Drive
+echantillonner_palmier.py    Zenodo rasters        -> data/echantillons_rdc.geojson
+extraire_series_gee.py       Sentinel-1 and -2     -> CSV in Google Drive
 preparer_parcelles.py        CSV                   -> data/parcelles.parquet
 modele_binaire.py            parquet               -> data/modele_palmier.joblib
 ```
 
-Chaque étape est lançable seule et reprend là où la précédente s'est arrêtée.
+Each step runs on its own and resumes where the previous one stopped.
 
-### Variables explicatives
+### Features
 
-Les 96 réflectances brutes ne sont pas données au modèle. Elles sont résumées en **34 variables annuelles**, beaucoup plus stables d'une image à l'autre.
+The 96 raw reflectance values are not fed to the model. They are summarised into **34 annual features**, far more stable from one image to the next.
 
-**Indices normalisés**, calculés mois par mois puis résumés par leur moyenne, écart type, minimum, maximum et amplitude :
+**Normalised indices**, computed month by month then summarised by mean, standard deviation, minimum, maximum and amplitude:
 
-| Indice | Formule | Ce qu'il capte |
+| Index | Formula | What it captures |
 |---|---|---|
-| NDVI | (B8 − B4) / (B8 + B4) | vigueur de la végétation |
-| NDWI | (B3 − B8) / (B3 + B8) | teneur en eau du couvert |
-| NBR | (B8 − B12) / (B8 + B12) | structure de la canopée |
+| NDVI | (B8 − B4) / (B8 + B4) | vegetation vigour |
+| NDWI | (B3 − B8) / (B3 + B8) | canopy water content |
+| NBR | (B8 − B12) / (B8 + B12) | canopy structure |
 
-**Statistiques par bande** : moyenne et écart type annuels des 8 bandes.
+**Per-band statistics**: annual mean and standard deviation of the 8 bands.
 
-**Signature radar** : moyenne et écart type de l'écart VV − VH sur l'année.
+**Radar signature**: mean and standard deviation of the VV − VH difference over the year.
 
-**Mois du pic de NDVI**.
+**Month of NDVI peak**.
 
-### Protocole de validation
+### Validation protocol
 
-La validation croisée classique surestime fortement la performance en télédétection. Deux parcelles voisines partagent le même sol, la même météo et souvent la même image : avec un tirage aléatoire, des parcelles quasi identiques se retrouvent des deux côtés du découpage et le modèle est évalué sur ce qu'il a déjà vu.
+Standard cross-validation heavily overestimates performance in remote sensing. Two neighbouring plots share the same soil, the same weather and often the same image: with a random split, nearly identical plots land on both sides and the model is scored on what it has already seen.
 
-Le protocole retenu est donc un **découpage spatial par blocs** : `StratifiedGroupKFold` à 5 plis, où le groupe est la tuile de 100 km. Chaque tuile est entièrement d'un seul côté du découpage, et chaque tuile est examinée exactement une fois au fil des 5 plis.
+The protocol used is therefore a **spatial block split**: `StratifiedGroupKFold` with 5 folds, where the group is the 100 km tile. Each tile sits entirely on one side of the split, and each tile is tested exactly once across the 5 folds.
 
-Les deux découpages sont calculés à chaque exécution. Leur écart, appelé ici **optimisme**, quantifie la fuite spatiale et sert de contrôle de fiabilité : au-delà de 0,10, le score annoncé n'est pas défendable.
+Both splits are computed on every run. Their difference, called **optimism** here, quantifies spatial leakage and acts as a reliability check: beyond 0.10, the reported score is not defensible.
 
-### Modèles comparés
+### Models compared
 
-`RandomForestClassifier` et `HistGradientBoostingClassifier`, tous deux évalués en validation spatiale. La forêt aléatoire est retenue, avec 0,819 contre 0,814 pour le gradient boosting. L'écart n'est pas significatif : la performance vient des variables, pas de l'algorithme.
+`RandomForestClassifier` and `HistGradientBoostingClassifier`, both evaluated under spatial validation. Random forest is selected, at 0.819 against 0.814 for gradient boosting, a difference that is not meaningful: performance comes from the features, not from the algorithm.
 
 ---
 
-## Le rôle décisif du radar
+## The decisive role of radar
 
-Le classement des variables par importance de permutation est sans ambiguïté.
+Permutation importance leaves no ambiguity.
 
-| Variable | Perte de F1 quand elle est mélangée |
+| Feature | F1 loss when shuffled |
 |---|---|
-| **vv_vh_moy** | **0,170** |
-| B8_moy | 0,033 |
-| VH_moy | 0,017 |
-| VV_moy | 0,013 |
-| ndwi_moy | 0,010 |
-| ndwi_ecart_type | 0,003 |
+| **vv_vh_moy** | **0.170** |
+| B8_moy | 0.033 |
+| VH_moy | 0.017 |
+| VV_moy | 0.013 |
+| ndwi_moy | 0.010 |
+| ndwi_ecart_type | 0.003 |
 
-L'écart entre les deux polarisations radar porte **5,2 fois** plus de signal que la meilleure variable optique.
+The difference between the two radar polarisations carries **5.2 times** more signal than the best optical feature.
 
-L'explication est physique. Le palmier et la forêt tropicale sont deux couverts fermés, verts toute l'année, dont l'amplitude saisonnière du NDVI est du même ordre, 0,40 pour le palmier contre 0,42 pour les zones sans palmier. L'optique les sépare mal. Le radar ne mesure pas la couleur mais la structure : une palmeraie a des arbres alignés, de hauteur homogène, et renvoie un écho régulier là où une forêt naturelle renvoie un écho désordonné.
+The explanation is physical. Palm and tropical forest are both closed canopies, green all year, with NDVI seasonal amplitudes of the same order, 0.40 for palm against 0.42 for palm-free areas. Optical imagery separates them poorly. Radar measures structure rather than colour: a plantation has aligned trees of uniform height and returns a regular echo, where natural forest returns a disordered one.
 
-### Effet mesuré
+### Measured effect
 
-| Configuration | F1 spatial | Optimisme |
+| Configuration | Spatial F1 | Optimism |
 |---|---|---|
-| Optique seule, 3 classes | 0,405 | +0,225 |
-| Optique et radar, 3 classes | 0,542 | +0,089 |
-| Optique et radar, binaire | **0,821** | **+0,019** |
+| Optical only, 3 classes | 0.405 | +0.225 |
+| Optical and radar, 3 classes | 0.542 | +0.089 |
+| Optical and radar, binary | **0.821** | **+0.019** |
 
-L'effondrement de l'optimisme, de 0,225 à 0,019, est aussi important que la hausse du score. Il indique que le modèle a cessé de s'accrocher à des indices locaux.
-
----
-
-## Zone de validité
-
-Les 34 blocs d'entraînement couvrent **12,1° à 30,1° est et -4,9° à 4,0° nord**, soit toute la largeur du bassin du Congo, de la façade atlantique jusqu'aux Grands Lacs. La validation croisée spatiale mesure directement le transfert d'une région à l'autre à l'intérieur de cette emprise, et l'optimisme de +0,019 dit qu'il se fait sans perte notable.
-
-Le domaine de validité est donc le **bassin du Congo en forêt tropicale humide**, et non un pays. Il couvre 24 blocs en RDC et 10 chez six voisins, ce qui est une force pour la généralisation : le modèle a été testé sur des contextes nationaux différents et n'a pas décroché.
-
-En revanche, une caractéristique de l'échantillonnage restreint sa portée et doit être comprise avant tout usage. Les tuiles retenues sont celles où Descals détecte du palmier, et à l'intérieur de chaque tuile l'échantillonnage vise la fenêtre la plus dense. **La classe « pas de palmier » représente donc ce qui entoure les palmeraies**, essentiellement de la forêt et des cultures voisines. Elle ne représente pas l'ensemble d'un territoire national.
-
-Ce que le modèle n'a jamais vu :
-
-- savane sèche du Katanga et du Kasaï méridional
-- zones urbaines et périurbaines
-- reliefs et forêts d'altitude du Kivu
-- grands plans d'eau et zones marécageuses étendues
-- toute la moitié sud de la RDC, aucun bloc ne descend sous -4,9° de latitude
-
-Sur ces milieux, son comportement est inconnu, non pas mauvais mais non mesuré. C'est le mécanisme qui explique la première limite ci-dessous.
+The collapse of optimism, from 0.225 to 0.019, matters as much as the score increase. It shows the model stopped relying on local shortcuts.
 
 ---
 
-## Usages possibles
+## Area of validity
 
-### Ce que le modèle sait faire aujourd'hui
+The 34 training blocks span **12.1° to 30.1° east and -4.9° to 4.0° north**, the full width of the Congo Basin, from the Atlantic side to the Great Lakes. Spatial cross-validation measures transfer between regions inside that extent directly, and an optimism of +0.019 says it happens without meaningful loss.
 
-**Vérifier un site précis.** Sur une parcelle ou des coordonnées données, il répond si du palmier est présent, avec une précision de 0,87. Sur 100 alertes, 87 sont justes.
+The domain of validity is therefore the **Congo Basin in humid tropical forest**, not a country. It spans 24 blocks in the DRC and 10 across six neighbours, which is a strength for generalisation: the model was tested across different national contexts and did not break down.
 
-**Prioriser des missions de terrain.** Le modèle produit une probabilité, pas seulement une réponse. Classer les sites suspects par probabilité décroissante et vérifier les premiers permet de concentrer un budget de patrouille limité là où le rendement est le meilleur.
+One feature of the sampling does restrict its reach, however, and must be understood before any use. The selected tiles are those where Descals detects palm, and within each tile the sampling targets the densest window. **The "no palm" class therefore represents what surrounds palm plantations**, mostly forest and neighbouring crops. It does not represent any national territory as a whole.
 
-**Contrôler une déclaration.** Une concession ou un exploitant affirme qu'aucune plantation n'occupe une parcelle : le modèle fournit un avis indépendant, appuyé sur de l'imagerie publique et daté.
+What the model has never seen:
 
-**Pré-filtrer avant photo-interprétation.** Sur un lot de sites à examiner à l'œil, écarter d'abord ceux que le modèle juge sans palmier avec une forte confiance réduit la charge humaine, à condition d'accepter les 10 % de palmeraies manquées.
+- dry savanna of Katanga and southern Kasaï
+- urban and peri-urban areas
+- highlands and montane forests of the Kivu
+- large water bodies and extensive wetlands
+- the entire southern half of the DRC, no block reaches below -4.9° latitude
 
-**Documenter un rapport.** Les chiffres sont mesurés en validation spatiale et la méthode est reproductible, donc défendables devant un bailleur ou un partenaire scientifique.
-
-### Applications concrètes pour la conservation
-
-- surveillance des limites de parcs et de leurs zones tampons
-- détection d'expansion de plantations dans des concessions suivies
-- appui chiffré aux rapports de déforestation liés au palmier
-- ciblage des patrouilles et des missions de vérification
-
-### Ce que le modèle ne sait pas faire
-
-**Produire une carte nationale.** Voir la limite 1 ci-dessous, c'est le point le plus important de ce document.
-
-**Distinguer industriel et villageois.** Voir la limite 2.
-
-**Dater une plantation ou détecter un changement.** Le modèle est entraîné sur une seule année. Comparer deux années demanderait de le réentraîner et de valider cette comparaison, ce qui n'a pas été fait.
-
-**Estimer une surface.** Il classe des points, pas des polygones. Convertir en hectares exigerait une segmentation et une validation de surface distinctes.
+On those environments its behaviour is unknown, not poor but unmeasured. This is the mechanism behind the first limitation below.
 
 ---
 
-## Pistes d'amélioration
+## Possible uses
 
-Classées par gain attendu, du plus rentable au plus coûteux.
+### What the model can do today
 
-**1. Élargir et rééquilibrer la classe négative.**
-C'est le chantier prioritaire, celui qui débloquerait la cartographie. Il faut échantillonner des tuiles sans aucun palmier, savane, ville, montagne, marécage, et respecter la rareté réelle du palmier plutôt que 60,7 %. Effet attendu : effondrement du taux de fausse alerte sur les milieux que le modèle n'a jamais vus.
+**Check a specific site.** Given a plot or a set of coordinates, it reports whether palm is present, with a precision of 0.87. Out of 100 alerts, 87 are correct.
 
-**2. Ajuster le seuil de décision.**
-Le modèle sort une probabilité, actuellement tranchée à 0,5. Remonter ce seuil échange du rappel contre de la précision. Pour une carte nationale, un seuil à 0,8 ou 0,9 réduirait fortement les faux positifs au prix de quelques palmeraies manquées. Le bon réglage dépend du coût relatif des deux erreurs dans ton usage, il se choisit et ne se devine pas.
+**Prioritise field missions.** The model outputs a probability, not just an answer. Ranking suspect sites by decreasing probability and checking the top ones concentrates a limited patrol budget where the return is highest.
 
-**3. Ajouter le relief.**
-Le modèle numérique de terrain Copernicus ou SRTM fournit altitude et pente. Le palmier à huile ne pousse ni en altitude ni sur forte pente. Deux variables gratuites, immédiates à extraire dans Earth Engine, qui élimineraient mécaniquement une partie des faux positifs en zone de relief.
+**Audit a declaration.** A concession or an operator claims no plantation occupies a plot: the model provides an independent, dated opinion grounded in public imagery.
 
-**4. Introduire des variables de texture.**
-Écart type local, matrices de cooccurrence sur le radar, statistiques de voisinage. C'est la seule voie pour séparer palmier industriel et palmier villageois, puisque leur différence est géométrique. Bénéfice attendu aussi sur la distinction palmeraie contre forêt.
+**Pre-filter before photo-interpretation.** On a batch of sites to review by eye, first discarding those the model confidently judges palm-free reduces the human workload, provided the 10 % of missed plantations are acceptable.
 
-**5. Étendre à plusieurs années.**
-Rejouer l'extraction sur 2019 à 2023 multiplierait le volume d'apprentissage, mesurerait la stabilité du modèle dans le temps et ouvrirait la détection de changement, donc le suivi d'expansion.
+**Support a report.** The figures are measured under spatial validation and the method is reproducible, hence defensible before a funder or a scientific partner.
 
-**6. Collecter des étiquettes de terrain.**
-Les étiquettes actuelles proviennent d'un modèle, celui de Descals, dont les erreurs sont héritées sans contrôle. Des relevés faits avec les fermiers et les équipes de terrain fourniraient une vérité indépendante, et permettraient enfin de mesurer la performance réelle plutôt que la concordance avec un autre modèle.
+### Concrete conservation applications
 
-**7. Densifier la série radar.**
-Le modèle utilise des médianes mensuelles. Sentinel-1 repasse tous les six à douze jours : une résolution temporelle plus fine, ou des statistiques de variabilité entre passages, pourrait porter davantage d'information de structure.
+- monitoring park boundaries and their buffer zones
+- detecting plantation expansion inside tracked concessions
+- quantified support for palm-driven deforestation reporting
+- targeting patrols and verification missions
+
+### What the model cannot do
+
+**Produce a national map.** See limitation 1 below, the most important point in this document.
+
+**Tell industrial from smallholder palm.** See limitation 2.
+
+**Date a plantation or detect change.** The model is trained on a single year. Comparing two years would require retraining and validating that comparison, which has not been done.
+
+**Estimate an area.** It classifies points, not polygons. Converting to hectares would require separate segmentation and area validation.
 
 ---
 
-## Correctif du 14 septembre 2026
+## Improvement paths
 
-Avant cette date, les douze composites mensuels Sentinel-2 étaient identiques pour 100 % des points : chaque point portait une seule valeur optique, recopiée douze fois. Le radar n'était pas touché.
+Ordered by expected payoff, from most to least cost-effective.
 
-La cause tenait à une ligne d'`extraire_series_gee.py`. La division des réflectances par 10 000 rendait des images privées de leur propriété `system:time_start`. Le filtre mensuel ne trouvait alors aucune image, et le repli sur la médiane annuelle s'appliquait aux douze mois, sans aucune erreur levée. La correction recopie la date après la division. L'amplitude saisonnière de 0,04 contre 0,03 annoncée auparavant était un artefact de ce défaut : elle valait en réalité 0,000 pour les deux classes.
+**1. Broaden and rebalance the negative class.**
+This is the priority, the one that would unlock mapping. It means sampling tiles with no palm at all, savanna, cities, mountains, wetlands, and honouring the real scarcity of palm instead of 60.7 %. Expected effect: collapse of the false alarm rate on environments the model has never seen.
 
-Effet mesuré : le F1 spatial passe de 0,817 à 0,821, un écart inférieur à l'écart type entre plis. En trois classes il recule de 0,561 à 0,542. Rendre le temps à l'optique n'améliore donc pas nettement le modèle, dont la séparation repose sur le radar comme avant. Tous les chiffres, cartes et courbes de ce document ont été recalculés sur les données corrigées. Les données, prédictions et le modèle d'avant la correction sont conservés dans `data/` avec le suffixe `_avant_correctif`.
+**2. Tune the decision threshold.**
+The model outputs a probability, currently cut at 0.5. Raising that threshold trades recall for precision. For a national map, a threshold of 0.8 or 0.9 would sharply cut false positives at the cost of a few missed plantations. The right setting depends on the relative cost of the two errors in your use case, it is chosen rather than guessed.
 
-## Limites connues
+**3. Add terrain.**
+The Copernicus or SRTM digital elevation model provides altitude and slope. Oil palm grows neither at altitude nor on steep slopes. Two free features, immediate to extract in Earth Engine, that would mechanically remove part of the false positives in hilly terrain.
 
-Elles sont énoncées ici parce qu'elles conditionnent l'usage du modèle.
+**4. Introduce texture features.**
+Local standard deviation, grey-level co-occurrence matrices on radar, neighbourhood statistics. This is the only route to separating industrial from smallholder palm, since their difference is geometric. Expected benefit on the palm against forest distinction as well.
 
-**1. Le jeu ne reflète pas la rareté réelle du palmier.**
-L'échantillonnage a délibérément visé la fenêtre la plus dense en palmier de chaque tuile, d'où 60,7 % de palmier dans le jeu. Sur la RDC entière, le palmier occupe une fraction de pourcent du territoire. Le taux de fausse alerte de 21 % sur les zones sans palmier est acceptable ici, mais appliqué à un pays entier il produirait un volume de faux positifs supérieur aux vraies détections. **Le modèle n'est pas validé pour produire une carte nationale.** Il répond à la question « cette parcelle contient-elle du palmier », pas à la question « où est le palmier en RDC ».
+**5. Extend to several years.**
+Replaying the extraction over 2019 to 2023 would multiply the training volume, measure the model's stability over time and open up change detection, hence expansion monitoring.
 
-**2. Palmier industriel et palmier villageois ne sont pas séparables.**
-En trois classes, le modèle plafonne à 0,542 et confond les deux types dans plus d'un tiers des cas, jusqu'à 42 % pour le palmier villageois. Ce qui les distingue est la géométrie des plantations, taille des blocs et régularité des alignements, information absente d'une analyse par pixel. Il faudrait des variables de texture et de voisinage.
+**6. Collect field labels.**
+The current labels come from a model, that of Descals, whose errors are inherited unchecked. Surveys carried out with farmers and field teams would provide independent ground truth, and would finally allow measuring real performance rather than agreement with another model.
 
-**3. Les étiquettes sont elles-mêmes une prédiction.**
-La couche Descals est le produit d'un modèle, avec ses propres erreurs. Elles sont héritées ici sans correction.
+**7. Densify the radar series.**
+The model uses monthly medians. Sentinel-1 revisits every six to twelve days: a finer temporal resolution, or variability statistics between passes, could carry more structural information.
 
-**4. Une seule année.**
-Tout est calé sur 2021. Le comportement du modèle sur d'autres années n'a pas été mesuré.
+---
 
-**5. La variante sans compte est nettement inférieure.**
-`extraire_series_local.py` évite toute inscription en lisant Sentinel-2 sur le bucket AWS ouvert, mais le bucket Sentinel-1 est payant. Sans radar, le résultat plafonne à 0,405. Une tuile, la 33506, s'est même révélée inexploitable en optique seule, couverte de nuages les douze mois de l'année. Le radar, qui traverse les nuages, a résolu ce cas.
+## Fix of 14 September 2026
+
+Before that date, the twelve monthly Sentinel-2 composites were identical for 100 % of points: each point carried a single optical value, copied twelve times. Radar was not affected.
+
+The cause was one line of `extraire_series_gee.py`. Dividing reflectances by 10,000 returned images stripped of their `system:time_start` property. The monthly filter then found no image, and the fallback to the annual median applied to all twelve months, without raising any error. The fix copies the date back after the division. The seasonal amplitude of 0.04 against 0.03 reported earlier was an artefact of this defect: it was actually 0.000 for both classes.
+
+Measured effect: spatial F1 moves from 0.817 to 0.821, less than the standard deviation across folds. In three classes it drops from 0.561 to 0.542. Giving time back to the optical bands therefore does not clearly improve the model, whose separation still rests on radar. Every figure, map and curve in this document was recomputed on the corrected data. The data, predictions and model from before the fix are kept in `data/` with the `_avant_correctif` suffix.
+
+## Known limitations
+
+They are stated here because they govern how the model may be used.
+
+**1. The dataset does not reflect the real scarcity of palm.**
+Sampling deliberately targeted the palm-densest window of each tile, hence 60.7 % palm in the dataset. Across the whole DRC, palm covers a fraction of a percent of the territory. The 21 % false alarm rate on palm-free areas is acceptable here, but applied to an entire country it would produce more false positives than true detections. **The model is not validated for national mapping.** It answers "does this plot contain palm", not "where is palm in the DRC".
+
+**2. Industrial and smallholder palm are not separable.**
+In the three-class setting the model plateaus at 0.542 and confuses the two types more than a third of the time, up to 42 % for smallholder palm. What distinguishes them is plantation geometry, block size and row regularity, information absent from a per-pixel analysis. Texture and neighbourhood features would be required.
+
+**3. The labels are themselves a prediction.**
+The Descals layer is the output of a model, with its own errors. They are inherited here without correction.
+
+**4. A single year.**
+Everything is anchored on 2021. Behaviour on other years has not been measured.
+
+**5. The account-free variant is clearly inferior.**
+`extraire_series_local.py` avoids any registration by reading Sentinel-2 from the open AWS bucket, but the Sentinel-1 bucket is paid. Without radar the result plateaus at 0.405. One tile, 33506, even proved unusable with optical data alone, clouded over for all twelve months. Radar, which sees through clouds, resolved that case.
 
 ---
 
 ## Technologies
 
-| Domaine | Outil | Version |
+| Area | Tool | Version |
 |---|---|---|
-| Langage | Python | 3.14.5 |
-| Imagerie satellite | Google Earth Engine (`earthengine-api`) | 1.7.38 |
-| Apprentissage | scikit-learn | 1.7.2 |
-| Données tabulaires | pandas | 2.3.3 |
-| Calcul numérique | numpy | 2.3.5 |
-| Données géospatiales | geopandas | 1.1.4 |
+| Language | Python | 3.14.5 |
+| Satellite imagery | Google Earth Engine (`earthengine-api`) | 1.7.38 |
+| Machine learning | scikit-learn | 1.7.2 |
+| Tabular data | pandas | 2.3.3 |
+| Numerical computing | numpy | 2.3.5 |
+| Geospatial data | geopandas | 1.1.4 |
 | Rasters | rasterio | 1.5.0 |
-| Géométries | shapely | 2.1.2 |
-| Format colonne | pyarrow | 22.0.0 |
-| Graphiques | matplotlib | 3.10.8 |
-| Sérialisation | joblib | 1.5.2 |
+| Geometries | shapely | 2.1.2 |
+| Columnar format | pyarrow | 22.0.0 |
+| Plotting | matplotlib | 3.10.8 |
+| Serialisation | joblib | 1.5.2 |
 | Exploration | Jupyter Notebook | |
 
-Sources d'imagerie : Copernicus Sentinel-1 et Sentinel-2, via Google Earth Engine. Une variante locale interroge l'API STAC d'Element 84 sur le bucket AWS Open Data `sentinel-cogs`.
+Imagery sources: Copernicus Sentinel-1 and Sentinel-2, through Google Earth Engine. A local variant queries the Element 84 STAC API against the AWS Open Data bucket `sentinel-cogs`.
 
 ---
 
-## Reproduire le résultat
+## Reproducing the result
 
-### Prérequis
+### Prerequisites
 
 ```bash
 pip install earthengine-api scikit-learn pandas numpy geopandas rasterio pyarrow matplotlib joblib
 earthengine authenticate
 ```
 
-Un compte Google Earth Engine est nécessaire, gratuit pour un usage non commercial. Renseigner ensuite l'identifiant du projet Cloud dans `extraire_series_gee.py`.
+A Google Earth Engine account is required, free for non-commercial use. Then set your Cloud project identifier in `extraire_series_gee.py`.
 
-### Étape 1, les points étiquetés
+### Step 1, the labelled points
 
-Télécharger depuis [Zenodo 10.5281/zenodo.13379129](https://zenodo.org/records/13379129) et décompresser dans `data/` :
+Download from [Zenodo 10.5281/zenodo.13379129](https://zenodo.org/records/13379129) and unpack into `data/`:
 
-- `Grid_OilPalm2016-2021.zip` vers `data/palmier_grille/`
-- les rasters d'extension vers `data/palmier_extent/`
+- `Grid_OilPalm2016-2021.zip` into `data/palmier_grille/`
+- the extent rasters into `data/palmier_extent/`
 
 ```bash
 python echantillonner_palmier.py
 ```
 
-Produit `data/echantillons_rdc.geojson`, 8 658 points sur 34 blocs.
+Produces `data/echantillons_rdc.geojson`, 8,658 points across 34 blocks.
 
-### Étape 2, les séries temporelles
+### Step 2, the time series
 
 ```bash
 python extraire_series_gee.py
 ```
 
-L'export tourne côté Google et rend la main immédiatement. Compter une dizaine de minutes. Le CSV arrive dans Google Drive, dossier `Classify`. Le suivre sur [code.earthengine.google.com/tasks](https://code.earthengine.google.com/tasks).
+The export runs on Google's side and returns immediately. Allow about ten minutes. The CSV lands in Google Drive, folder `Classify`. Track it at [code.earthengine.google.com/tasks](https://code.earthengine.google.com/tasks).
 
-### Étape 3, la mise en forme
+### Step 3, formatting
 
-Télécharger le CSV dans `data/`, puis :
+Download the CSV into `data/`, then:
 
 ```bash
 python preparer_parcelles.py data/series_sentinel_rdc.csv
 ```
 
-### Étape 4, le modèle
+### Step 4, the model
 
 ```bash
 python modele_binaire.py
 ```
 
-Affiche l'évaluation complète et écrit `data/modele_palmier.joblib`.
+Prints the full evaluation and writes `data/modele_palmier.joblib`.
 
-### Variante sans aucun compte
+### Account-free variant
 
 ```bash
 python extraire_series_local.py
 ```
 
-Remplace les étapes 2 et 3 en lisant Sentinel-2 sur AWS Open Data. Compter une heure. Ne fournit pas le radar, donc plafonne à 0,405. Utile pour valider la chaîne, pas pour produire un résultat.
+Replaces steps 2 and 3 by reading Sentinel-2 from AWS Open Data. Allow one hour. Provides no radar, hence plateaus at 0.405. Useful to validate the pipeline, not to produce a result.
 
 ---
 
-## Structure du dépôt
+## Repository layout
 
-| Fichier | Rôle |
+| File | Role |
 |---|---|
-| `echantillonner_palmier.py` | étape 1, tirage des points étiquetés dans les rasters Zenodo |
-| `extraire_series_gee.py` | étape 2, extraction Sentinel-1 et Sentinel-2 via Earth Engine |
-| `extraire_series_local.py` | étape 2, variante sans compte, Sentinel-2 seul depuis AWS |
-| `preparer_parcelles.py` | étape 3, conversion du CSV Earth Engine au format parquet |
-| `modele_binaire.py` | étape 4, modèle final palmier contre pas de palmier |
-| `predictions_carte.py` | prédictions géolocalisées du pli de test, pour la carte |
-| `verifier_site.py` | démonstration, probabilité de palmier sur des coordonnées données |
-| `carte_resultats.py` | carte des quatre cas de la matrice de confusion, PNG, `--langue en` pour l'anglais |
-| `classification_cultures.ipynb` | notebook d'analyse, comparaison des découpages et évaluation à 3 classes |
-| `organiser_fermiers_py.ipynb` | organisation des listes de fermiers, hors chaîne de classification |
+| `echantillonner_palmier.py` | step 1, draws labelled points from the Zenodo rasters |
+| `extraire_series_gee.py` | step 2, Sentinel-1 and Sentinel-2 extraction through Earth Engine |
+| `extraire_series_local.py` | step 2, account-free variant, Sentinel-2 only from AWS |
+| `preparer_parcelles.py` | step 3, converts the Earth Engine CSV to parquet |
+| `modele_binaire.py` | step 4, final palm against no-palm model |
+| `predictions_carte.py` | geolocated predictions for the test fold, feeding the map |
+| `verifier_site.py` | demo, palm probability for given coordinates |
+| `carte_resultats.py` | map of the four confusion-matrix cases, PNG output, `--langue en` for English |
+| `classification_cultures.ipynb` | analysis notebook, split comparison and three-class evaluation |
+| `organiser_fermiers_py.ipynb` | farmer list organisation, outside the classification pipeline |
 
-Le dossier `data/` est exclu du dépôt. Il contient les rasters, les séries extraites et des données personnelles de fermiers, qui ne doivent jamais être publiées.
+The `data/` folder is excluded from the repository. It holds the rasters, the extracted series and personal farmer data, which must never be published.
 
 ---
 
-## Références
+## References
 
 - Descals, A. et al. (2024). *Global Oil Palm extent maps*. Zenodo. [10.5281/zenodo.13379129](https://zenodo.org/records/13379129), CC BY 4.0
-- Kalischek, N. et al. (2023). Cocoa plantations are associated with deforestation in Côte d'Ivoire and Ghana. *Nature Food*, 4, 384-393. [Article](https://www.nature.com/articles/s43016-023-00751-8), [code](https://github.com/D1noFuzi/cocoamapping)
+- Kalischek, N. et al. (2023). Cocoa plantations are associated with deforestation in Côte d'Ivoire and Ghana. *Nature Food*, 4, 384-393. [Paper](https://www.nature.com/articles/s43016-023-00751-8), [code](https://github.com/D1noFuzi/cocoamapping)
 - ESA WorldCereal Reference Data Module. [rdm.esa-worldcereal.org](https://rdm.esa-worldcereal.org/)
-- Copernicus Sentinel-1 et Sentinel-2, European Space Agency
+- Copernicus Sentinel-1 and Sentinel-2, European Space Agency
 
 ---
 
-## Comment citer ce travail
+## How to cite this work
 
-Si vous utilisez ce code ou ces résultats, merci de citer :
+If you use this code or these results, please cite:
 
-> Bahati, E. (2026). *Classi-fy : détection du palmier à huile dans le bassin du Congo à partir de séries temporelles Sentinel-1 et Sentinel-2*. https://github.com/Estherbh/Classi-fy
+> Bahati, E. (2026). *Classi-fy: oil palm detection in the Congo Basin from Sentinel-1 and Sentinel-2 time series*. https://github.com/Estherbh/Classi-fy
 
 ```bibtex
 @software{bahati_classify_2026,
   author = {Bahati, Esther},
-  title  = {Classi-fy : détection du palmier à huile dans le bassin du Congo à partir de séries temporelles Sentinel-1 et Sentinel-2},
+  title  = {Classi-fy: oil palm detection in the Congo Basin from Sentinel-1 and Sentinel-2 time series},
   year   = {2026},
   url    = {https://github.com/Estherbh/Classi-fy}
 }
@@ -428,8 +426,14 @@ Si vous utilisez ce code ou ces résultats, merci de citer :
 
 ---
 
-## Licence
+## Other languages
 
-Code publié sous licence [MIT](LICENSE), © 2026 Esther Bahati. Vous pouvez le réutiliser, le modifier et le redistribuer, à condition de conserver le nom de l'autrice et la mention de licence.
+This documentation is also available in French: [Version française](README.fr.md).
 
-Les données sources gardent leur propre licence : les cartes de Descals et al. sont sous CC BY 4.0, les images Sentinel sous la licence Copernicus.
+---
+
+## License
+
+Code released under the [MIT](LICENSE) license, © 2026 Esther Bahati. You may reuse, modify and redistribute it, provided you keep the author's name and the license notice.
+
+Source data keep their own licenses: the Descals et al. maps are CC BY 4.0, Sentinel imagery falls under the Copernicus license.
